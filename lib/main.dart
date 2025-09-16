@@ -5,8 +5,12 @@ import 'package:smartcare_app/screens/registration_screen.dart';
 import 'package:smartcare_app/screens/login_screen.dart';
 import 'package:smartcare_app/screens/patient/patient_dashboard.dart';
 import 'package:smartcare_app/screens/doctor/doctor_dashboard.dart';
+import 'package:firebase_core/firebase_core.dart'; // Add this import
 
-void main() {
+void main() async { // Make the main function asynchronous
+  WidgetsFlutterBinding.ensureInitialized(); // Add this line
+  await Firebase.initializeApp(); // Add this line
+
   runApp(const SmartCareApp());
 }
 

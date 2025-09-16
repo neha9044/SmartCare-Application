@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartcare_app/services/auth_service.dart';
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -379,24 +381,59 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   }
 
   void _handleRegistration() async {
-    if (!_formKey.currentState!.validate()) return;
+    if (!_formKey.currentState!.validate()) {
+      return;
+    }
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement Firebase Authentication registration
-    await Future.delayed(Duration(seconds: 2)); // Simulate API call
+    try {
+      final authService = AuthService();
+      await authService.registerUserWithFirestore(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        userType: selectedUserType,
+        fullName: _nameController.text.trim(),
+        phoneNumber: _phoneController.text.trim(),
+        specialty: selectedUserType == 'Doctor' ? _specialtyController.text.trim() : null,
+        licenseNumber: (selectedUserType == 'Doctor' || selectedUserType == 'Pharmacy') ? _licenseController.text.trim() : null,
+      );
 
-    setState(() => _isLoading = false);
+      // Show success message and navigate
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Account created successfully!'),
+          backgroundColor: Colors.green,
+        ),
+      );
+      Navigator.pushReplacementNamed(context, '/login');
 
-    // Show success message and navigate
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Account created successfully!'),
-        backgroundColor: Colors.green,
-      ),
-    );
+    } on FirebaseAuthException catch (e) {
+      String message;
+      if (e.code == 'weak-password') {
+        message = 'The password provided is too weak.';
+      } else if (e.code == 'email-already-in-use') {
+        message = 'The account already exists for that email.';
+      } else {
+        message = 'An unexpected error occurred. Please try again.';
+      }
 
-    Navigator.pushReplacementNamed(context, '/login');
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to create account. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   @override
