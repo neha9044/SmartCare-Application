@@ -17,7 +17,7 @@ class DoctorCard extends StatelessWidget {
         padding: const EdgeInsets.all(16),
         decoration: BoxDecoration(
           color: Colors.white,
-          borderRadius: BorderRadius.circular(12),
+          borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.1),
@@ -28,6 +28,7 @@ class DoctorCard extends StatelessWidget {
           ],
         ),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             CircleAvatar(
               radius: 30,
@@ -79,11 +80,14 @@ class DoctorCard extends StatelessWidget {
                     children: [
                       const Icon(Icons.location_on, size: 12, color: AppColors.darkGrey),
                       const SizedBox(width: 4),
-                      Text(
-                        doctor.location,
-                        style: TextStyle(
-                          color: AppColors.darkGrey,
-                          fontSize: 12,
+                      Expanded(
+                        child: Text(
+                          doctor.location,
+                          style: TextStyle(
+                            color: AppColors.darkGrey,
+                            fontSize: 12,
+                          ),
+                          overflow: TextOverflow.ellipsis,
                         ),
                       ),
                     ],
@@ -92,9 +96,12 @@ class DoctorCard extends StatelessWidget {
               ),
             ),
             if (doctor.isAvailableToday)
-              ElevatedButton(
-                onPressed: onTap,
-                child: const Text('Book Now'),
+              Padding(
+                padding: const EdgeInsets.only(left: 8.0),
+                child: ElevatedButton(
+                  onPressed: onTap,
+                  child: const Text('Book Now'),
+                ),
               ),
           ],
         ),

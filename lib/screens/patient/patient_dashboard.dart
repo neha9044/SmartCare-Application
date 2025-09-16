@@ -25,18 +25,25 @@ class _PatientDashboardState extends State<PatientDashboard> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_selectedIndex],
+      backgroundColor: Colors.transparent, // Set scaffold background to transparent
+      body: Container(
+        decoration: BoxDecoration(
+          gradient: AppColors.glassmorphismGradient, // Apply the gradient to the container
+        ),
+        child: _screens[_selectedIndex],
+      ),
       bottomNavigationBar: BottomNavigationBar(
         type: BottomNavigationBarType.fixed,
         currentIndex: _selectedIndex,
         onTap: (index) => setState(() => _selectedIndex = index),
-        selectedItemColor: AppColors.primaryColor,
-        unselectedItemColor: AppColors.lightGrey,
+        selectedItemColor: Colors.white, // Changed selected item color for better contrast
+        unselectedItemColor: Colors.white.withOpacity(0.5), // Changed unselected item color
+        backgroundColor: Colors.white.withOpacity(0.1), // Glassmorphic effect on navbar
         items: const [
-          BottomNavigationBarItem(icon: Icon(Icons.home), label: 'Home'),
-          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: 'Appointments'),
-          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: 'Prescriptions'),
-          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: 'Reminders'),
+          BottomNavigationBarItem(icon: Icon(Icons.home), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.calendar_today), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.receipt_long), label: ''),
+          BottomNavigationBarItem(icon: Icon(Icons.notifications), label: ''),
         ],
       ),
     );
