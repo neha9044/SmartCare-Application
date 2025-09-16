@@ -24,6 +24,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _specialtyController = TextEditingController(); // For doctors
   final _licenseController = TextEditingController(); // For doctors/pharmacy
 
+  // NEW DOCTOR FIELDS
+  final _experienceController = TextEditingController();
+  final _qualificationController = TextEditingController();
+  final _locationController = TextEditingController();
+  final _clinicNameController = TextEditingController();
+  final _clinicLocationController = TextEditingController();
+  final _consultationFeesController = TextEditingController();
+
   @override
   Widget build(BuildContext context) {
     // Set status bar to transparent
@@ -149,6 +157,85 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
                             validator: (value) {
                               if (value == null || value.isEmpty) {
                                 return 'Please enter your specialty';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10),
+                          _buildTextField(
+                            controller: _experienceController,
+                            label: 'Years of Experience',
+                            icon: Icons.work_outline,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your experience';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10),
+                          _buildTextField(
+                            controller: _qualificationController,
+                            label: 'Qualifications (e.g., MBBS, MD)',
+                            icon: Icons.school_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your qualifications';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10),
+                          _buildTextField(
+                            controller: _locationController,
+                            label: 'Your City/Location',
+                            icon: Icons.location_city_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your location';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10),
+                          _buildTextField(
+                            controller: _clinicNameController,
+                            label: 'Clinic Name',
+                            icon: Icons.business_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your clinic name';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10),
+                          _buildTextField(
+                            controller: _clinicLocationController,
+                            label: 'Clinic Address',
+                            icon: Icons.place_outlined,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your clinic address';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 10),
+                          // Find this code block
+                          _buildTextField(
+                            controller: _consultationFeesController,
+                            label: 'Consultation Fees (e.g., \$50)',
+                            icon: Icons.attach_money_outlined,
+                            keyboardType: TextInputType.number,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your consultation fees';
+                              }
+                              // ADD THIS VALIDATION
+                              if (double.tryParse(value) == null) {
+                                return 'Please enter a valid number';
                               }
                               return null;
                             },
@@ -397,6 +484,14 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         phoneNumber: _phoneController.text.trim(),
         specialty: selectedUserType == 'Doctor' ? _specialtyController.text.trim() : null,
         licenseNumber: (selectedUserType == 'Doctor' || selectedUserType == 'Pharmacy') ? _licenseController.text.trim() : null,
+
+        // Pass NEW Doctor-specific data
+        experience: selectedUserType == 'Doctor' ? _experienceController.text.trim() : null,
+        qualification: selectedUserType == 'Doctor' ? _qualificationController.text.trim() : null,
+        location: selectedUserType == 'Doctor' ? _locationController.text.trim() : null,
+        clinicName: selectedUserType == 'Doctor' ? _clinicNameController.text.trim() : null,
+        clinicLocation: selectedUserType == 'Doctor' ? _clinicLocationController.text.trim() : null,
+        consultationFees: selectedUserType == 'Doctor' ? double.tryParse(_consultationFeesController.text.trim()) : null,
       );
 
       // Show success message and navigate
@@ -445,6 +540,15 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     _confirmPasswordController.dispose();
     _specialtyController.dispose();
     _licenseController.dispose();
+
+    // Dispose NEW Doctor controllers
+    _experienceController.dispose();
+    _qualificationController.dispose();
+    _locationController.dispose();
+    _clinicNameController.dispose();
+    _clinicLocationController.dispose();
+    _consultationFeesController.dispose();
+
     super.dispose();
   }
 }

@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smartcare_app/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
@@ -14,6 +13,8 @@ class _LoginScreenState extends State<LoginScreen> {
   final _formKey = GlobalKey<FormState>();
   bool _obscurePassword = true;
   bool _isLoading = false;
+
+  final AuthService _authService = AuthService();
 
   @override
   Widget build(BuildContext context) {
@@ -40,7 +41,6 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Center(
@@ -54,17 +54,13 @@ class _LoginScreenState extends State<LoginScreen> {
                               width: 1,
                             ),
                           ),
-                          child: Icon(
-                            Icons.medical_services,
-                            size: 40,
-                            color: Colors.white,
-                          ),
+                          child: Icon(Icons.medical_services, size: 40, color: Colors.white),
                         ),
                       ),
                       SizedBox(height: 12),
                       Center(
                         child: Text(
-                          'Connecting Care, Empowering Health Welcome to SmartCare',
+                          'Connecting Care, Empowering Health\nWelcome to SmartCare',
                           textAlign: TextAlign.center,
                           style: TextStyle(
                             fontSize: 18,
@@ -84,7 +80,6 @@ class _LoginScreenState extends State<LoginScreen> {
                         ),
                       ),
                       SizedBox(height: 24),
-                      SizedBox(height: 12),
                       Row(
                         mainAxisAlignment: MainAxisAlignment.spaceEvenly,
                         children: [
@@ -99,12 +94,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         keyboardType: TextInputType.emailAddress,
                         style: TextStyle(color: Colors.white, fontSize: 14),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your email';
-                          }
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                          if (value == null || value.isEmpty) return 'Please enter your email';
+                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
                             return 'Please enter a valid email';
-                          }
                           return null;
                         },
                         decoration: InputDecoration(
@@ -113,23 +105,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           prefixIcon: Icon(Icons.email, color: Colors.white.withOpacity(0.8), size: 20),
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.2),
-                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white, width: 2),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.redAccent),
-                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                       SizedBox(height: 12),
@@ -138,12 +114,8 @@ class _LoginScreenState extends State<LoginScreen> {
                         obscureText: _obscurePassword,
                         style: TextStyle(color: Colors.white, fontSize: 14),
                         validator: (value) {
-                          if (value == null || value.isEmpty) {
-                            return 'Please enter your password';
-                          }
-                          if (value.length < 6) {
-                            return 'Password must be at least 6 characters';
-                          }
+                          if (value == null || value.isEmpty) return 'Please enter your password';
+                          if (value.length < 6) return 'Password must be at least 6 characters';
                           return null;
                         },
                         decoration: InputDecoration(
@@ -151,52 +123,12 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelStyle: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
                           prefixIcon: Icon(Icons.lock, color: Colors.white.withOpacity(0.8), size: 20),
                           suffixIcon: IconButton(
-                            icon: Icon(
-                              _obscurePassword ? Icons.visibility : Icons.visibility_off,
-                              color: Colors.white.withOpacity(0.8),
-                              size: 20,
-                            ),
-                            onPressed: () {
-                              setState(() {
-                                _obscurePassword = !_obscurePassword;
-                              });
-                            },
+                            icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white.withOpacity(0.8)),
+                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
                           ),
                           filled: true,
                           fillColor: Colors.white.withOpacity(0.2),
-                          contentPadding: EdgeInsets.symmetric(vertical: 12, horizontal: 16),
-                          border: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                          ),
-                          enabledBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-                          ),
-                          focusedBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.white, width: 2),
-                          ),
-                          errorBorder: OutlineInputBorder(
-                            borderRadius: BorderRadius.circular(12),
-                            borderSide: BorderSide(color: Colors.redAccent),
-                          ),
-                        ),
-                      ),
-                      SizedBox(height: 4),
-                      Align(
-                        alignment: Alignment.centerRight,
-                        child: TextButton(
-                          onPressed: () {
-                            // TODO: Implement forgot password
-                          },
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 8, vertical: 4),
-                          ),
-                          child: Text(
-                            'Forgot Password?',
-                            style: TextStyle(color: Colors.white, fontSize: 13),
-                          ),
+                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
                         ),
                       ),
                       SizedBox(height: 16),
@@ -208,48 +140,22 @@ class _LoginScreenState extends State<LoginScreen> {
                           style: ElevatedButton.styleFrom(
                             backgroundColor: Colors.white,
                             foregroundColor: Color(0xFF2C5F95),
-                            shape: RoundedRectangleBorder(
-                              borderRadius: BorderRadius.circular(12),
-                            ),
+                            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                              ? SizedBox(
-                            height: 20,
-                            width: 20,
-                            child: CircularProgressIndicator(color: Color(0xFF2C5F95), strokeWidth: 2),
-                          )
-                              : Text(
-                            'Login',
-                            style: TextStyle(
-                              fontSize: 16,
-                              fontWeight: FontWeight.bold,
-                            ),
-                          ),
+                              ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Color(0xFF2C5F95), strokeWidth: 2))
+                              : Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
                         ),
                       ),
                       SizedBox(height: 16),
                       Center(
                         child: TextButton(
-                          onPressed: () {
-                            Navigator.pushNamed(context, '/register');
-                          },
-                          style: TextButton.styleFrom(
-                            padding: EdgeInsets.symmetric(horizontal: 12, vertical: 6),
-                          ),
+                          onPressed: () => Navigator.pushNamed(context, '/register'),
                           child: RichText(
                             text: TextSpan(
                               text: 'Don\'t have an account? ',
                               style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
-                              children: [
-                                TextSpan(
-                                  text: 'Register',
-                                  style: TextStyle(
-                                    color: Colors.white,
-                                    fontWeight: FontWeight.bold,
-                                    fontSize: 13,
-                                  ),
-                                ),
-                              ],
+                              children: [TextSpan(text: 'Register', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))],
                             ),
                           ),
                         ),
@@ -275,36 +181,14 @@ class _LoginScreenState extends State<LoginScreen> {
         decoration: BoxDecoration(
           color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
           borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
-            width: 2,
-          ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: Colors.white.withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            )
-          ]
-              : [],
+          border: Border.all(color: isSelected ? Colors.white : Colors.white.withOpacity(0.3), width: 2),
+          boxShadow: isSelected ? [BoxShadow(color: Colors.white.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))] : [],
         ),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: isSelected ? Color(0xFF2C5F95) : Colors.white,
-              size: 26,
-            ),
+            Icon(icon, color: isSelected ? Color(0xFF2C5F95) : Colors.white, size: 26),
             SizedBox(height: 6),
-            Text(
-              type,
-              style: TextStyle(
-                color: isSelected ? Color(0xFF2C5F95) : Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 11,
-              ),
-            ),
+            Text(type, style: TextStyle(color: isSelected ? Color(0xFF2C5F95) : Colors.white, fontWeight: FontWeight.w600, fontSize: 11)),
           ],
         ),
       ),
@@ -317,47 +201,44 @@ class _LoginScreenState extends State<LoginScreen> {
     setState(() => _isLoading = true);
 
     try {
-      final authService = AuthService();
-      final userType = await authService.loginUser(
+      await _authService.signInWithEmailAndPassword(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
-        userType: selectedUserType,
       );
 
-      // Navigate based on the verified user type
-      switch (userType) {
-        case 'Patient':
-          Navigator.pushReplacementNamed(context, '/patient-dashboard');
-          break;
-        case 'Doctor':
-          Navigator.pushReplacementNamed(context, '/doctor-dashboard');
-          break;
-        case 'Pharmacy':
-          Navigator.pushReplacementNamed(context, '/pharmacy-dashboard');
-          break;
+      final isCorrectUserType = await _authService.checkUserType(
+        userId: _authService.currentUser!.uid,
+        expectedUserType: selectedUserType,
+      );
+
+      if (isCorrectUserType) {
+        switch (selectedUserType) {
+          case 'Patient':
+            Navigator.pushReplacementNamed(context, '/patient-dashboard');
+            break;
+          case 'Doctor':
+            Navigator.pushReplacementNamed(context, '/doctor-dashboard');
+            break;
+          case 'Pharmacy':
+            Navigator.pushReplacementNamed(context, '/pharmacy-dashboard');
+            break;
+        }
+      } else {
+        await _authService.signOut();
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Invalid user type selected. Please choose the correct type.'), backgroundColor: Colors.red),
+        );
       }
+
     } on FirebaseAuthException catch (e) {
       String message;
-      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
-        message = 'Invalid email or password. Please try again.';
-      } else if (e.code == 'role-mismatch') {
-        message = 'This email is registered with a different user type.';
-      } else {
-        message = 'Login failed. Please check your credentials and try again.';
-      }
-
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text(message),
-          backgroundColor: Colors.red,
-        ),
-      );
+      if (e.code == 'user-not-found') message = 'No user found for that email.';
+      else if (e.code == 'wrong-password') message = 'Wrong password provided.';
+      else message = 'Login failed. Please check your credentials.';
+      ScaffoldMessenger.of(context).showSnackBar(SnackBar(content: Text(message), backgroundColor: Colors.red));
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: Text('Failed to login. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Failed to login. Please try again.'), backgroundColor: Colors.red),
       );
     } finally {
       setState(() => _isLoading = false);

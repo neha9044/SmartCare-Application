@@ -5,6 +5,8 @@ class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
 
+  User? get currentUser => _auth.currentUser;
+
   Future<void> registerUserWithFirestore({
     required String email,
     required String password,
@@ -13,30 +15,23 @@ class AuthService {
     required String phoneNumber,
     String? specialty,
     String? licenseNumber,
+    String? experience,
+    String? qualification,
+    String? location,
+    String? clinicName,
+    String? clinicLocation,
+    double? consultationFees,
   }) async {
     try {
-      // 1. Authenticate the user with Firebase Authentication
-      final authResult = await _auth.createUserWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
-
+      final authResult = await _auth.createUserWithEmailAndPassword(email: email, password: password);
       final userId = authResult.user!.uid;
 
-      // 2. Determine the Firestore collection and user data based on user type
       String collectionPath;
       Map<String, dynamic> userData;
 
       if (userType == 'Patient') {
         collectionPath = 'patients';
-        userData = {
-          'id': userId,
-          'userType': userType,
-          'name': fullName,
-          'email': email,
-          'phone': phoneNumber,
-          'created_at': FieldValue.serverTimestamp(),
-        };
+        userData = {'id': userId, 'userType': userType, 'name': fullName, 'email': email, 'phone': phoneNumber, 'created_at': FieldValue.serverTimestamp()};
       } else if (userType == 'Doctor') {
         collectionPath = 'doctors';
         userData = {
@@ -47,64 +42,48 @@ class AuthService {
           'phone': phoneNumber,
           'specialty': specialty,
           'licenseNumber': licenseNumber,
+          'experience': experience,
+          'qualification': qualification,
+          'location': location,
+          'clinicName': clinicName,
+          'clinicLocation': clinicLocation,
+          'consultationFees': consultationFees,
           'created_at': FieldValue.serverTimestamp(),
         };
-      } else { // 'Pharmacy'
+      } else {
         collectionPath = 'pharmacies';
-        userData = {
-          'id': userId,
-          'userType': userType,
-          'name': fullName,
-          'email': email,
-          'phone': phoneNumber,
-          'licenseNumber': licenseNumber,
-          'created_at': FieldValue.serverTimestamp(),
-        };
+        userData = {'id': userId, 'userType': userType, 'name': fullName, 'email': email, 'phone': phoneNumber, 'licenseNumber': licenseNumber, 'created_at': FieldValue.serverTimestamp()};
       }
 
-      // 3. Save the user data to Firestore
       await _firestore.collection(collectionPath).doc(userId).set(userData);
 
     } on FirebaseAuthException {
-      rethrow; // Rethrow the exception to be handled by the UI
+      rethrow;
     } catch (e) {
-      rethrow; // Rethrow any other exceptions
+      rethrow;
     }
   }
 
-  // New method for user login
-  Future<String> loginUser({
-    required String email,
-    required String password,
-    required String userType,
-  }) async {
-    try {
-      // Authenticate the user with Firebase Authentication
-      final authResult = await _auth.signInWithEmailAndPassword(
-        email: email,
-        password: password,
-      );
+  Future<void> signInWithEmailAndPassword({required String email, required String password}) async {
+    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  }
 
-      final userId = authResult.user!.uid;
+  Future<bool> checkUserType({required String userId, required String expectedUserType}) async {
+    final collectionPath = _getCollectionPathForUserType(expectedUserType);
+    final userDoc = await _firestore.collection(collectionPath).doc(userId).get();
+    return userDoc.exists;
+  }
 
-      // Check if the user exists in the correct Firestore collection
-      final userDoc = await _firestore.collection(userType.toLowerCase() + 's').doc(userId).get();
-
-      if (userDoc.exists) {
-        return userType; // Return the user type to trigger navigation
-      } else {
-        // If the document doesn't exist, it means the user's role is not what they selected
-        await _auth.signOut(); // Sign out the user
-        throw FirebaseAuthException(
-          code: 'role-mismatch',
-          message: 'The selected user type does not match your account.',
-        );
-      }
-    } on FirebaseAuthException {
-      rethrow; // Rethrow the exception to be handled by the UI
-    } catch (e) {
-      // Handle other potential errors
-      throw Exception('An unexpected error occurred during login.');
+  String _getCollectionPathForUserType(String userType) {
+    switch (userType) {
+      case 'Patient': return 'patients';
+      case 'Doctor': return 'doctors';
+      case 'Pharmacy': return 'pharmacies';
+      default: throw Exception('Invalid user type');
     }
+  }
+
+  Future<void> signOut() async {
+    await _auth.signOut();
   }
 }
