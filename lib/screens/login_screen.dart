@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartcare_app/services/auth_service.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -314,22 +316,51 @@ class _LoginScreenState extends State<LoginScreen> {
 
     setState(() => _isLoading = true);
 
-    // TODO: Implement Firebase Authentication
-    await Future.delayed(Duration(seconds: 2)); // Simulate API call
+    try {
+      final authService = AuthService();
+      final userType = await authService.loginUser(
+        email: _emailController.text.trim(),
+        password: _passwordController.text.trim(),
+        userType: selectedUserType,
+      );
 
-    setState(() => _isLoading = false);
+      // Navigate based on the verified user type
+      switch (userType) {
+        case 'Patient':
+          Navigator.pushReplacementNamed(context, '/patient-dashboard');
+          break;
+        case 'Doctor':
+          Navigator.pushReplacementNamed(context, '/doctor-dashboard');
+          break;
+        case 'Pharmacy':
+          Navigator.pushReplacementNamed(context, '/pharmacy-dashboard');
+          break;
+      }
+    } on FirebaseAuthException catch (e) {
+      String message;
+      if (e.code == 'user-not-found' || e.code == 'wrong-password') {
+        message = 'Invalid email or password. Please try again.';
+      } else if (e.code == 'role-mismatch') {
+        message = 'This email is registered with a different user type.';
+      } else {
+        message = 'Login failed. Please check your credentials and try again.';
+      }
 
-    // Navigate based on user type
-    switch (selectedUserType) {
-      case 'Patient':
-        Navigator.pushReplacementNamed(context, '/patient-dashboard');
-        break;
-      case 'Doctor':
-        Navigator.pushReplacementNamed(context, '/doctor-dashboard');
-        break;
-      case 'Pharmacy':
-        Navigator.pushReplacementNamed(context, '/pharmacy-dashboard');
-        break;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text(message),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Failed to login. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    } finally {
+      setState(() => _isLoading = false);
     }
   }
 

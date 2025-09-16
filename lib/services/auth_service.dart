@@ -71,4 +71,40 @@ class AuthService {
       rethrow; // Rethrow any other exceptions
     }
   }
+
+  // New method for user login
+  Future<String> loginUser({
+    required String email,
+    required String password,
+    required String userType,
+  }) async {
+    try {
+      // Authenticate the user with Firebase Authentication
+      final authResult = await _auth.signInWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
+
+      final userId = authResult.user!.uid;
+
+      // Check if the user exists in the correct Firestore collection
+      final userDoc = await _firestore.collection(userType.toLowerCase() + 's').doc(userId).get();
+
+      if (userDoc.exists) {
+        return userType; // Return the user type to trigger navigation
+      } else {
+        // If the document doesn't exist, it means the user's role is not what they selected
+        await _auth.signOut(); // Sign out the user
+        throw FirebaseAuthException(
+          code: 'role-mismatch',
+          message: 'The selected user type does not match your account.',
+        );
+      }
+    } on FirebaseAuthException {
+      rethrow; // Rethrow the exception to be handled by the UI
+    } catch (e) {
+      // Handle other potential errors
+      throw Exception('An unexpected error occurred during login.');
+    }
+  }
 }
