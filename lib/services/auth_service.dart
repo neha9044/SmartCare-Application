@@ -7,6 +7,7 @@ class AuthService {
 
   User? get currentUser => _auth.currentUser;
 
+  /// Register a new user (Patient, Doctor, or Pharmacy) with Firestore
   Future<void> registerUserWithFirestore({
     required String email,
     required String password,
@@ -23,7 +24,10 @@ class AuthService {
     double? consultationFees,
   }) async {
     try {
-      final authResult = await _auth.createUserWithEmailAndPassword(email: email, password: password);
+      final authResult = await _auth.createUserWithEmailAndPassword(
+        email: email,
+        password: password,
+      );
       final userId = authResult.user!.uid;
 
       String collectionPath;
@@ -31,7 +35,14 @@ class AuthService {
 
       if (userType == 'Patient') {
         collectionPath = 'patients';
-        userData = {'id': userId, 'userType': userType, 'name': fullName, 'email': email, 'phone': phoneNumber, 'created_at': FieldValue.serverTimestamp()};
+        userData = {
+          'id': userId,
+          'userType': userType,
+          'name': fullName,
+          'email': email,
+          'phone': phoneNumber,
+          'created_at': FieldValue.serverTimestamp(),
+        };
       } else if (userType == 'Doctor') {
         collectionPath = 'doctors';
         userData = {
@@ -50,25 +61,68 @@ class AuthService {
           'consultationFees': consultationFees,
           'created_at': FieldValue.serverTimestamp(),
         };
-      } else {
+      } else if (userType == 'Pharmacy') {
         collectionPath = 'pharmacies';
-        userData = {'id': userId, 'userType': userType, 'name': fullName, 'email': email, 'phone': phoneNumber, 'licenseNumber': licenseNumber, 'created_at': FieldValue.serverTimestamp()};
+        userData = {
+          'id': userId,
+          'userType': userType,
+          'name': fullName,
+          'email': email,
+          'phone': phoneNumber,
+          'licenseNumber': licenseNumber,
+          'created_at': FieldValue.serverTimestamp(),
+        };
+      } else {
+        throw Exception('Invalid user type');
       }
 
-      await _firestore.collection(collectionPath).doc(userId).set(userData);
+      // Remove null values before saving
+      userData.removeWhere((key, value) => value == null);
 
-    } on FirebaseAuthException {
-      rethrow;
+      await _firestore.collection(collectionPath).doc(userId).set(userData);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'email-already-in-use') {
+        throw Exception('This email is already registered.');
+      } else if (e.code == 'weak-password') {
+        throw Exception('The password is too weak.');
+      } else if (e.code == 'invalid-email') {
+        throw Exception('The email address is invalid.');
+      } else {
+        throw Exception(e.message ?? 'Authentication failed');
+      }
     } catch (e) {
-      rethrow;
+      throw Exception('Something went wrong: $e');
     }
   }
 
-  Future<void> signInWithEmailAndPassword({required String email, required String password}) async {
-    await _auth.signInWithEmailAndPassword(email: email, password: password);
+  /// Sign in a user
+  Future<void> signInWithEmailAndPassword({
+    required String email,
+    required String password,
+  }) async {
+    try {
+      await _auth.signInWithEmailAndPassword(email: email, password: password);
+    } on FirebaseAuthException catch (e) {
+      if (e.code == 'user-not-found') {
+        throw Exception('No user found with this email.');
+      } else if (e.code == 'wrong-password') {
+        throw Exception('Invalid password.');
+      } else {
+        throw Exception(e.message ?? 'Login failed');
+      }
+    }
   }
 
-  Future<bool> checkUserType({required String userId, required String expectedUserType}) async {
+  /// Sign out the current user
+  Future<void> signOut() async {
+    await _auth.signOut();
+  }
+
+  /// Check if a user exists in a specific collection (by type)
+  Future<bool> checkUserType({
+    required String userId,
+    required String expectedUserType,
+  }) async {
     final collectionPath = _getCollectionPathForUserType(expectedUserType);
     final userDoc = await _firestore.collection(collectionPath).doc(userId).get();
     return userDoc.exists;
@@ -76,14 +130,42 @@ class AuthService {
 
   String _getCollectionPathForUserType(String userType) {
     switch (userType) {
-      case 'Patient': return 'patients';
-      case 'Doctor': return 'doctors';
-      case 'Pharmacy': return 'pharmacies';
-      default: throw Exception('Invalid user type');
+      case 'Patient':
+        return 'patients';
+      case 'Doctor':
+        return 'doctors';
+      case 'Pharmacy':
+        return 'pharmacies';
+      default:
+        throw Exception('Invalid user type');
     }
   }
 
-  Future<void> signOut() async {
-    await _auth.signOut();
+  /// Fetch patient data
+  Future<DocumentSnapshot> getPatientData(String patientId) async {
+    return _firestore.collection('patients').doc(patientId).get();
+  }
+
+  /// Fetch doctor data
+  Future<DocumentSnapshot> getDoctorData(String doctorId) async {
+    return _firestore.collection('doctors').doc(doctorId).get();
+  }
+
+  /// Save a new appointment
+  Future<void> saveAppointment({
+    required String doctorId,
+    required String patientId,
+    required String patientName,
+    required DateTime date,
+    required String time,
+  }) async {
+    await _firestore.collection('appointments').add({
+      'doctorId': doctorId,
+      'patientId': patientId,
+      'patientName': patientName,
+      'date': Timestamp.fromDate(date),
+      'time': time,
+      'createdAt': FieldValue.serverTimestamp(),
+    });
   }
 }

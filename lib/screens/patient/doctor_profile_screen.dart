@@ -11,6 +11,18 @@ class DoctorProfileScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Corrected logic to safely get initials
+    String initials = '';
+    if (doctor.name.isNotEmpty) {
+      List<String> nameParts = doctor.name.split(' ');
+      if (nameParts.isNotEmpty) {
+        initials += nameParts.first[0];
+        if (nameParts.length > 1) {
+          initials += nameParts[1][0];
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -45,7 +57,7 @@ class DoctorProfileScreen extends StatelessWidget {
                     radius: 50,
                     backgroundColor: AppColors.primaryColor,
                     child: Text(
-                      doctor.name.substring(4, 6).toUpperCase(),
+                      initials.toUpperCase(), // Use the safely-generated initials here
                       style: const TextStyle(
                         color: Colors.white,
                         fontSize: 24,

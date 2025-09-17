@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/screens/patient/doctor_profile_screen.dart';
 import 'package:smartcare_app/screens/patient/profile_screen.dart';
-import 'package:smartcare_app/widgets/doctor_card.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -15,132 +15,34 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final TextEditingController _searchController = TextEditingController();
-  String _selectedLocation = 'Mumbai, Maharashtra';
+
+  String _patientName = 'John Doe'; // Replace with actual user data
+  List<Doctor> _allDoctors = [];
   List<Doctor> _filteredDoctors = [];
+  bool _isLoading = true;
+
+  String? _selectedLocation;
+  String? _selectedSpecialization;
+  List<String> _locations = ['All'];
+  List<String> _specializations = ['All'];
+
+  // Typewriter effect
   String _typewriterText = '';
   int _currentTypewriterIndex = 0;
   int _currentTextIndex = 0;
   Timer? _typewriterTimer;
+  final List<String> _typewriterTexts = ['Specialists...', 'Clinics...', 'Pharmacies...'];
 
+  // Animation
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
-
-  final List<String> _typewriterTexts = [
-    'Specialists...',
-    'Clinics...',
-    'Pharmacies...',
-  ];
-
-  final List<String> _locations = [
-    'Mumbai, Maharashtra',
-    'Delhi, NCR',
-    'Bangalore, Karnataka',
-    'Chennai, Tamil Nadu',
-    'Kolkata, West Bengal',
-    'Pune, Maharashtra',
-    'Hyderabad, Telangana',
-    'Ahmedabad, Gujarat',
-  ];
-
-  final List<Map<String, dynamic>> _specialistCategories = [
-    {'name': 'Cardiologist', 'icon': '❤️', 'color': Colors.red.shade100},
-    {'name': 'Dentist', 'icon': '🦷', 'color': Colors.blue.shade100},
-    {'name': 'Dermatologist', 'icon': '✨', 'color': Colors.purple.shade100},
-    {'name': 'Pediatrician', 'icon': '👶', 'color': Colors.green.shade100},
-    {'name': 'Orthopedic', 'icon': '🦴', 'color': Colors.orange.shade100},
-    {'name': 'Neurologist', 'icon': '🧠', 'color': Colors.indigo.shade100},
-  ];
-
-  final List<Doctor> _allDoctors = [
-    Doctor(
-      id: '1',
-      name: 'Dr. Sarah Johnson',
-      specialization: 'Cardiologist',
-      hospital: 'Mumbai Heart Institute',
-      location: 'Mumbai, Maharashtra',
-      rating: 4.8,
-      reviewCount: 156,
-      experience: '15 years',
-      imageUrl: '',
-      availableSlots: ['9:00 AM', '11:00 AM', '3:00 PM', '5:00 PM'],
-      consultationFee: 800,
-      isAvailableToday: true,
-      about: 'Specialist in cardiac surgeries and interventional cardiology.',
-      qualifications: ['MBBS', 'MD Cardiology'],
-    ),
-    Doctor(
-      id: '2',
-      name: 'Dr. Michael Brown',
-      specialization: 'Dermatologist',
-      hospital: 'Skin Care Clinic',
-      location: 'Mumbai, Maharashtra',
-      rating: 4.6,
-      reviewCount: 89,
-      experience: '12 years',
-      imageUrl: '',
-      availableSlots: ['10:00 AM', '2:00 PM', '4:00 PM'],
-      consultationFee: 600,
-      isAvailableToday: false,
-      about: 'Expert in treating skin conditions and cosmetic dermatology.',
-      qualifications: ['MBBS', 'MD Dermatology'],
-    ),
-    Doctor(
-      id: '3',
-      name: 'Dr. Emily Davis',
-      specialization: 'General Physician',
-      hospital: 'City General Hospital',
-      location: 'Mumbai, Maharashtra',
-      rating: 4.7,
-      reviewCount: 234,
-      experience: '10 years',
-      imageUrl: '',
-      availableSlots: ['8:00 AM', '10:00 AM', '1:00 PM', '6:00 PM'],
-      consultationFee: 400,
-      isAvailableToday: true,
-      about: 'Experienced in preventive care and chronic disease management.',
-      qualifications: ['MBBS', 'MD General Medicine'],
-    ),
-    Doctor(
-      id: '4',
-      name: 'Dr. James Wilson',
-      specialization: 'Pediatrician',
-      hospital: 'Children\'s Hospital',
-      location: 'Mumbai, Maharashtra',
-      rating: 4.9,
-      reviewCount: 178,
-      experience: '18 years',
-      imageUrl: '',
-      availableSlots: ['9:00 AM', '12:00 PM', '4:00 PM'],
-      consultationFee: 500,
-      isAvailableToday: true,
-      about: 'Specialized in child healthcare and development.',
-      qualifications: ['MBBS', 'MD Pediatrics'],
-    ),
-    Doctor(
-      id: '5',
-      name: 'Dr. Lisa Anderson',
-      specialization: 'Orthopedic',
-      hospital: 'Bone & Joint Center',
-      location: 'Mumbai, Maharashtra',
-      rating: 4.5,
-      reviewCount: 142,
-      experience: '14 years',
-      imageUrl: '',
-      availableSlots: ['11:00 AM', '2:00 PM', '5:00 PM'],
-      consultationFee: 700,
-      isAvailableToday: true,
-      about: 'Specialized in joint replacements and sports injuries.',
-      qualifications: ['MBBS', 'MS Orthopedics'],
-    ),
-  ];
-
-  String _patientName = 'John Doe'; // This should come from user profile
 
   @override
   void initState() {
     super.initState();
     _setupAnimations();
-    _filterDoctors();
+    _fetchAndSetDoctors();
+    _searchController.addListener(_filterDoctors);
     _startTypewriterEffect();
   }
 
@@ -149,11 +51,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-
     _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _fadeController, curve: Curves.easeInOut),
     );
-
     _fadeController.forward();
   }
 
@@ -161,23 +61,87 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _typewriterTimer?.cancel();
     _typewriterTimer = Timer.periodic(const Duration(milliseconds: 150), (timer) {
       String currentText = _typewriterTexts[_currentTextIndex];
-
       if (_currentTypewriterIndex < currentText.length) {
         setState(() {
           _typewriterText = currentText.substring(0, _currentTypewriterIndex + 1);
           _currentTypewriterIndex++;
         });
       } else {
-        timer.cancel(); // Stop the current timer
+        timer.cancel();
         Timer(const Duration(seconds: 2), () {
           setState(() {
             _currentTextIndex = (_currentTextIndex + 1) % _typewriterTexts.length;
             _currentTypewriterIndex = 0;
             _typewriterText = '';
           });
-          _startTypewriterEffect(); // Start a new timer for the next text
+          _startTypewriterEffect();
         });
       }
+    });
+  }
+
+  Future<void> _fetchAndSetDoctors() async {
+    setState(() => _isLoading = true);
+    try {
+      final snapshot = await FirebaseFirestore.instance.collection('doctors').get();
+      final List<Doctor> fetchedDoctors = [];
+      final Set<String> uniqueSpecializations = {'All'};
+      final Set<String> uniqueLocations = {'All'};
+
+      for (var doc in snapshot.docs) {
+        final data = doc.data();
+        final doctor = Doctor(
+          id: doc.id,
+          name: data['name'] ?? 'N/A',
+          specialization: data['specialty'] ?? 'General Physician',
+          hospital: data['clinicName'] ?? 'N/A',
+          location: data['location'] ?? 'N/A',
+          rating: (data['rating'] as num?)?.toDouble() ?? 0.0,
+          reviewCount: data['reviewCount'] ?? 0,
+          experience: data['experience'] ?? 'N/A',
+          imageUrl: '',
+          availableSlots: (data['availableSlots'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? ['9:00 AM'],
+          consultationFee: (data['consultationFees'] as num?)?.toDouble() ?? 0.0,
+          isAvailableToday: true,
+          about: data['about'] ?? '',
+          qualifications: (data['qualification'] as String?)?.split(',').map((q) => q.trim()).toList() ?? [],
+        );
+        fetchedDoctors.add(doctor);
+        uniqueSpecializations.add(doctor.specialization);
+        uniqueLocations.add(doctor.location);
+      }
+
+      setState(() {
+        _allDoctors = fetchedDoctors;
+        _specializations = uniqueSpecializations.toList();
+        _locations = uniqueLocations.toList();
+        _selectedSpecialization = _specializations.first;
+        _selectedLocation = _locations.first;
+        _isLoading = false;
+      });
+
+      _filterDoctors();
+    } catch (e) {
+      print('Error fetching doctors: $e');
+      setState(() {
+        _allDoctors = [];
+        _filteredDoctors = [];
+        _isLoading = false;
+        _selectedSpecialization = 'All';
+        _selectedLocation = 'All';
+      });
+    }
+  }
+
+  void _filterDoctors() {
+    setState(() {
+      _filteredDoctors = _allDoctors.where((doctor) {
+        bool matchesSearch = doctor.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+            doctor.specialization.toLowerCase().contains(_searchController.text.toLowerCase());
+        bool matchesSpecialization = _selectedSpecialization == 'All' || doctor.specialization == _selectedSpecialization;
+        bool matchesLocation = _selectedLocation == 'All' || doctor.location == _selectedLocation;
+        return matchesSearch && matchesSpecialization && matchesLocation;
+      }).toList();
     });
   }
 
@@ -187,15 +151,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _fadeController.dispose();
     _searchController.dispose();
     super.dispose();
-  }
-
-  void _filterDoctors() {
-    setState(() {
-      _filteredDoctors = _allDoctors.where((doctor) {
-        bool matchesLocation = doctor.location == _selectedLocation;
-        return matchesLocation;
-      }).toList();
-    });
   }
 
   @override
@@ -209,21 +164,18 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               physics: const BouncingScrollPhysics(),
               child: AnimatedBuilder(
                 animation: _fadeAnimation,
-                builder: (context, child) {
-                  return Opacity(
-                    opacity: _fadeAnimation.value,
-                    child: Column(
-                      children: [
-                        _buildHeader(context),
-                        _buildGreeting(),
-                        _buildLocationSelector(),
-                        _buildSpecialistGrid(),
-                        _buildDoctorsList(),
-                        const SizedBox(height: 100), // Space for bottom nav
-                      ],
-                    ),
-                  );
-                },
+                builder: (context, child) => Opacity(
+                  opacity: _fadeAnimation.value,
+                  child: Column(
+                    children: [
+                      _buildHeader(context),
+                      _buildGreeting(),
+                      _buildFilters(),
+                      _buildDoctorsList(),
+                      const SizedBox(height: 100),
+                    ],
+                  ),
+                ),
               ),
             ),
           ),
@@ -249,45 +201,47 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             AppColors.gradientMid1.withOpacity(0.05),
           ],
         ),
-        borderRadius: const BorderRadius.only(
-          bottomLeft: Radius.circular(30),
-          bottomRight: Radius.circular(30),
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 20,
-            offset: const Offset(0, 5),
-          ),
-        ],
+        borderRadius: const BorderRadius.only(bottomLeft: Radius.circular(30), bottomRight: Radius.circular(30)),
       ),
-      child: Column(
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              _buildGlassIconButton(
-                icon: Icons.person_outline_rounded,
-                onTap: () => Navigator.push(
-                  context,
-                  MaterialPageRoute(builder: (context) => const ProfileScreen()),
-                ),
+          _buildIconButton(Icons.person_outline_rounded, () {
+            Navigator.push(context, MaterialPageRoute(builder: (_) => const ProfileScreen()));
+          }),
+          Expanded(
+            child: Container(
+              margin: const EdgeInsets.symmetric(horizontal: 16),
+              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+              decoration: BoxDecoration(
+                color: Colors.white.withOpacity(0.9),
+                borderRadius: BorderRadius.circular(25),
+                border: Border.all(color: AppColors.primaryColor.withOpacity(0.2)),
               ),
-              _buildTypewriterSearchBar(),
-              _buildGlassIconButton(
-                icon: Icons.smart_toy_outlined,
-                onTap: () {
-                  // TODO: Navigate to AI chatbot
-                },
+              child: Row(
+                children: [
+                  Icon(Icons.search, color: AppColors.primaryColor, size: 20),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      _typewriterText,
+                      style: TextStyle(fontSize: 14, color: Colors.grey.shade700),
+                    ),
+                  ),
+                  Container(width: 2, height: 16, color: AppColors.primaryColor),
+                ],
               ),
-            ],
+            ),
           ),
+          _buildIconButton(Icons.smart_toy_outlined, () {
+            // TODO: AI Chatbot
+          }),
         ],
       ),
     );
   }
 
-  Widget _buildGlassIconButton({required IconData icon, required VoidCallback onTap}) {
+  Widget _buildIconButton(IconData icon, VoidCallback onTap) {
     return GestureDetector(
       onTap: onTap,
       child: Container(
@@ -297,61 +251,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           color: Colors.white.withOpacity(0.9),
           borderRadius: BorderRadius.circular(15),
           border: Border.all(color: AppColors.primaryColor.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryColor.withOpacity(0.1),
-              blurRadius: 15,
-              offset: const Offset(0, 5),
-            ),
-          ],
         ),
-        child: Icon(
-          icon,
-          color: AppColors.primaryColor,
-          size: 24,
-        ),
-      ),
-    );
-  }
-
-  Widget _buildTypewriterSearchBar() {
-    return Expanded(
-      child: Container(
-        margin: const EdgeInsets.symmetric(horizontal: 16),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(25),
-          border: Border.all(color: AppColors.primaryColor.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryColor.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.search, color: AppColors.primaryColor, size: 20),
-            const SizedBox(width: 8),
-            Expanded(
-              child: Text(
-                _typewriterText,
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Colors.grey.shade700,
-                  fontWeight: FontWeight.w400,
-                ),
-              ),
-            ),
-            Container(
-              width: 2,
-              height: 16,
-              color: AppColors.primaryColor.withOpacity(1),
-            ),
-          ],
-        ),
+        child: Icon(icon, color: AppColors.primaryColor),
       ),
     );
   }
@@ -362,213 +263,64 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
         gradient: LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [
-            Colors.white.withOpacity(0.9),
-            AppColors.primaryColor.withOpacity(0.05),
-          ],
+          colors: [Colors.white.withOpacity(0.9), AppColors.primaryColor.withOpacity(0.05)],
         ),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(color: AppColors.primaryColor.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryColor.withOpacity(0.1),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
       ),
       child: Row(
         children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              gradient: LinearGradient(
-                colors: [
-                  AppColors.primaryColor.withOpacity(0.2),
-                  AppColors.gradientMid1.withOpacity(0.1),
-                ],
-              ),
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: const Text(
-              '👋',
-              style: TextStyle(fontSize: 24),
-            ),
-          ),
+          const Text('👋', style: TextStyle(fontSize: 24)),
           const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  'Hello $_patientName,',
-                  style: const TextStyle(
-                    fontSize: 22,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Text(
-                  'How are you feeling today?',
-                  style: TextStyle(
-                    fontSize: 16,
-                    color: Colors.grey.shade600,
-                    fontWeight: FontWeight.w400,
-                  ),
-                ),
-              ],
-            ),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text('Hello $_patientName,', style: const TextStyle(fontSize: 22, fontWeight: FontWeight.w700)),
+              const SizedBox(height: 4),
+              Text('How are you feeling today?', style: TextStyle(color: Colors.grey.shade600)),
+            ],
           ),
         ],
       ),
     );
   }
 
-  Widget _buildLocationSelector() {
-    return Container(
-      margin: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 4),
-        decoration: BoxDecoration(
-          color: Colors.white.withOpacity(0.9),
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: AppColors.primaryColor.withOpacity(0.2)),
-          boxShadow: [
-            BoxShadow(
-              color: AppColors.primaryColor.withOpacity(0.1),
-              blurRadius: 10,
-              offset: const Offset(0, 3),
-            ),
-          ],
-        ),
-        child: Row(
-          children: [
-            Icon(Icons.location_on, color: Colors.red.shade400, size: 24),
-            const SizedBox(width: 12),
-            Expanded(
-              child: DropdownButtonHideUnderline(
+  Widget _buildFilters() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        children: [
+          Row(
+            children: [
+              Expanded(
                 child: DropdownButton<String>(
                   value: _selectedLocation,
                   isExpanded: true,
                   onChanged: (value) {
-                    setState(() {
-                      _selectedLocation = value!;
-                    });
+                    setState(() => _selectedLocation = value);
                     _filterDoctors();
                   },
-                  items: _locations.map((location) {
-                    return DropdownMenuItem(
-                      value: location,
-                      child: Text(
-                        location,
-                        style: TextStyle(
-                          color: Colors.grey.shade700,
-                          fontSize: 16,
-                          fontWeight: FontWeight.w500,
-                        ),
-                      ),
-                    );
-                  }).toList(),
-                  dropdownColor: Colors.white,
-                  style: TextStyle(color: Colors.grey.shade700),
-                  icon: Icon(Icons.keyboard_arrow_down, color: Colors.grey.shade500),
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-
-  Widget _buildSpecialistGrid() {
-    return Padding(
-      padding: const EdgeInsets.all(24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  gradient: AppColors.glassmorphismGradient,
-                  borderRadius: BorderRadius.circular(2),
+                  items: _locations.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                 ),
               ),
               const SizedBox(width: 12),
-              const Text(
-                'Find Specialists',
-                style: TextStyle(
-                  fontSize: 20,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.black87,
+              Expanded(
+                child: DropdownButton<String>(
+                  value: _selectedSpecialization,
+                  isExpanded: true,
+                  onChanged: (value) {
+                    setState(() => _selectedSpecialization = value);
+                    _filterDoctors();
+                  },
+                  items: _specializations.map((e) => DropdownMenuItem(value: e, child: Text(e))).toList(),
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 16),
-          GridView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3,
-              childAspectRatio: 1,
-              crossAxisSpacing: 12,
-              mainAxisSpacing: 12,
-            ),
-            itemCount: _specialistCategories.length,
-            itemBuilder: (context, index) {
-              final specialist = _specialistCategories[index];
-              return _buildSpecialistCard(specialist);
-            },
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildSpecialistCard(Map<String, dynamic> specialist) {
-    return Container(
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryColor.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryColor.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(12),
-            decoration: BoxDecoration(
-              color: specialist['color'],
-              borderRadius: BorderRadius.circular(15),
-            ),
-            child: Text(
-              specialist['icon'],
-              style: const TextStyle(fontSize: 24),
-            ),
-          ),
-          const SizedBox(height: 8),
-          Text(
-            specialist['name'],
-            style: const TextStyle(
-              fontSize: 12,
-              fontWeight: FontWeight.w600,
-              color: Colors.black87,
-            ),
-            textAlign: TextAlign.center,
+          const SizedBox(height: 12),
+          TextField(
+            controller: _searchController,
+            decoration: const InputDecoration(hintText: 'Search doctors...', prefixIcon: Icon(Icons.search)),
           ),
         ],
       ),
@@ -576,163 +328,35 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildDoctorsList() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              Container(
-                width: 4,
-                height: 24,
-                decoration: BoxDecoration(
-                  gradient: AppColors.glassmorphismGradient,
-                  borderRadius: BorderRadius.circular(2),
-                ),
-              ),
-              const SizedBox(width: 12),
-              const Expanded(
-                child: Text(
-                  'Available Doctors',
-                  style: TextStyle(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w700,
-                    color: Colors.black87,
-                  ),
-                ),
-              ),
-              Text(
-                'View All',
-                style: TextStyle(
-                  fontSize: 14,
-                  color: AppColors.primaryColor,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          ListView.builder(
-            shrinkWrap: true,
-            physics: const NeverScrollableScrollPhysics(),
-            itemCount: _filteredDoctors.length,
-            itemBuilder: (context, index) {
-              return _buildDoctorCard(_filteredDoctors[index]);
-            },
-          ),
-        ],
-      ),
+    if (_isLoading) return const Center(child: CircularProgressIndicator());
+    if (_filteredDoctors.isEmpty) {
+      return const Padding(
+        padding: EdgeInsets.all(24.0),
+        child: Text('No doctors found.', textAlign: TextAlign.center),
+      );
+    }
+    return ListView.builder(
+      shrinkWrap: true,
+      physics: const NeverScrollableScrollPhysics(),
+      itemCount: _filteredDoctors.length,
+      itemBuilder: (context, index) => _doctorCard(_filteredDoctors[index]),
     );
   }
 
-  Widget _buildDoctorCard(Doctor doctor) {
-    return Container(
-      margin: const EdgeInsets.only(bottom: 16),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.9),
-        borderRadius: BorderRadius.circular(20),
-        border: Border.all(color: AppColors.primaryColor.withOpacity(0.1)),
-        boxShadow: [
-          BoxShadow(
-            color: AppColors.primaryColor.withOpacity(0.05),
-            blurRadius: 15,
-            offset: const Offset(0, 5),
-          ),
-        ],
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16),
-        child: Row(
-          children: [
-            Container(
-              width: 60,
-              height: 60,
-              decoration: BoxDecoration(
-                gradient: LinearGradient(
-                  colors: [
-                    AppColors.primaryColor.withOpacity(0.2),
-                    AppColors.gradientMid1.withOpacity(0.1),
-                  ],
-                ),
-                borderRadius: BorderRadius.circular(30),
-                border: Border.all(color: AppColors.primaryColor.withOpacity(0.2)),
-              ),
-              child: Icon(
-                Icons.person,
-                color: AppColors.primaryColor,
-                size: 30,
-              ),
-            ),
-            const SizedBox(width: 16),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    doctor.name,
-                    style: const TextStyle(
-                      fontSize: 16,
-                      fontWeight: FontWeight.w700,
-                      color: Colors.black87,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Text(
-                    doctor.specialization,
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey.shade600,
-                    ),
-                  ),
-                  const SizedBox(height: 4),
-                  Row(
-                    children: [
-                      Icon(
-                        Icons.star,
-                        size: 16,
-                        color: Colors.amber.shade600,
-                      ),
-                      const SizedBox(width: 4),
-                      Text(
-                        '${doctor.rating} (${doctor.reviewCount} reviews)',
-                        style: TextStyle(
-                          fontSize: 12,
-                          color: Colors.grey.shade600,
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Navigator.push(
-                  context,
-                  MaterialPageRoute(
-                    builder: (context) => DoctorProfileScreen(doctor: doctor),
-                  ),
-                );
-              },
-              style: ElevatedButton.styleFrom(
-                backgroundColor: AppColors.primaryColor,
-                foregroundColor: Colors.white,
-                elevation: 0,
-                padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 10),
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(12),
-                ),
-              ),
-              child: const Text(
-                'Book',
-                style: TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w600,
-                ),
-              ),
-            ),
-          ],
+  Widget _doctorCard(Doctor doctor) {
+    return Card(
+      margin: const EdgeInsets.all(12),
+      child: ListTile(
+        title: Text(doctor.name),
+        subtitle: Text('${doctor.specialization} • ${doctor.location}'),
+        trailing: ElevatedButton(
+          onPressed: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(builder: (_) => DoctorProfileScreen(doctor: doctor)),
+            );
+          },
+          child: const Text('Book'),
         ),
       ),
     );

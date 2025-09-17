@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
+import 'package:smartcare_app/services/auth_service.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 
 class BookAppointmentScreen extends StatefulWidget {
@@ -13,11 +15,24 @@ class BookAppointmentScreen extends StatefulWidget {
 }
 
 class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
+  final AuthService _authService = AuthService();
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
 
   @override
   Widget build(BuildContext context) {
+    // Corrected logic to safely get initials
+    String initials = '';
+    if (widget.doctor.name.isNotEmpty) {
+      List<String> nameParts = widget.doctor.name.split(' ');
+      if (nameParts.isNotEmpty) {
+        initials += nameParts.first[0];
+        if (nameParts.length > 1) {
+          initials += nameParts[1][0];
+        }
+      }
+    }
+
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackgroundColor,
       appBar: AppBar(
@@ -51,7 +66,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     radius: 25,
                     backgroundColor: AppColors.primaryColor,
                     child: Text(
-                      widget.doctor.name.substring(4, 6).toUpperCase(),
+                      initials.toUpperCase(),
                       style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
                     ),
                   ),
@@ -155,8 +170,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             ),
             const SizedBox(height: 12),
             Wrap(
-              spacing: 12,
-              runSpacing: 8,
+              spacing: 12.0,
+              runSpacing: 8.0,
               children: widget.doctor.availableSlots.map((slot) {
                 bool isSelected = _selectedTimeSlot == slot;
                 return GestureDetector(
@@ -207,59 +222,90 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     );
   }
 
-  void _showBookingConfirmation() {
-    Random random = Random();
-    int queueNumber = random.nextInt(5) + 1;
+  void _showBookingConfirmation() async {
+    // 1. Get current patient's ID and name
+    final patientId = _authService.currentUser?.uid;
+    if (patientId == null) {
+      // Handle the case where the patient is not logged in
+      return;
+    }
 
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: Row(
-            children: const [
-              Icon(Icons.check_circle, color: AppColors.green, size: 28),
-              SizedBox(width: 8),
-              Text('Booking Confirmed!'),
-            ],
-          ),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Text('Your appointment has been successfully booked.'),
-              const SizedBox(height: 16),
-              Container(
-                padding: const EdgeInsets.all(12),
-                decoration: BoxDecoration(
-                  color: Colors.grey[100],
-                  borderRadius: BorderRadius.circular(8),
+    try {
+      final patientData = await _authService.getPatientData(patientId);
+      final patientName = patientData['name'] as String? ?? 'Patient';
+
+      // 2. Save the appointment to Firestore
+      await _authService.saveAppointment(
+        doctorId: widget.doctor.id,
+        patientId: patientId,
+        patientName: patientName,
+        date: _selectedDate,
+        time: _selectedTimeSlot!,
+      );
+
+      // 3. Show a confirmation dialog
+      Random random = Random();
+      int queueNumber = random.nextInt(5) + 1;
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        builder: (BuildContext context) {
+          return AlertDialog(
+            title: Row(
+              children: const [
+                Icon(Icons.check_circle, color: AppColors.green, size: 28),
+                SizedBox(width: 8),
+                Text('Booking Confirmed!'),
+              ],
+            ),
+            content: Column(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                const Text('Your appointment has been successfully booked.'),
+                const SizedBox(height: 16),
+                Container(
+                  padding: const EdgeInsets.all(12),
+                  decoration: BoxDecoration(
+                    color: Colors.grey[100],
+                    borderRadius: BorderRadius.circular(8),
+                  ),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      const Text('Appointment Details:', style: TextStyle(fontWeight: FontWeight.bold)),
+                      const SizedBox(height: 8),
+                      Text('Doctor: ${widget.doctor.name}'),
+                      Text('Date: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
+                      Text('Time: $_selectedTimeSlot'),
+                      Text('Fee: ₹${widget.doctor.consultationFee}'),
+                      const SizedBox(height: 8),
+                      Text('You are number $queueNumber in the queue.', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryColor)),
+                    ],
+                  ),
                 ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text('Appointment Details:', style: TextStyle(fontWeight: FontWeight.bold)),
-                    const SizedBox(height: 8),
-                    Text('Doctor: ${widget.doctor.name}'),
-                    Text('Date: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
-                    Text('Time: $_selectedTimeSlot'),
-                    Text('Fee: ₹${widget.doctor.consultationFee}'),
-                    const SizedBox(height: 8),
-                    Text('You are number $queueNumber in the queue.', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryColor)),
-                  ],
-                ),
+              ],
+            ),
+            actions: [
+              TextButton(
+                onPressed: () {
+                  Navigator.of(context).popUntil((route) => route.isFirst);
+                },
+                child: const Text('OK'),
               ),
             ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () {
-                Navigator.of(context).popUntil((route) => route.isFirst);
-              },
-              child: const Text('OK'),
-            ),
-          ],
-        );
-      },
-    );
+          );
+        },
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text('Failed to book appointment. Please try again.'),
+          backgroundColor: Colors.red,
+        ),
+      );
+    }
   }
 }
