@@ -55,7 +55,7 @@ class SmartCareApp extends StatelessWidget {
         '/register': (context) => RegistrationScreen(),
         '/login': (context) => LoginScreen(),
         '/patient-dashboard': (context) => PatientDashboard(),
-        '/doctor-dashboard': (context) => DoctorDashboardScreen(),
+        '/doctor-dashboard': (context) => DoctorHomeScreen(),
       },
     );
   }

@@ -28,67 +28,66 @@ class AppointmentsScreen extends StatelessWidget {
     },
   ];
 
+  // Healthcare theme colors from home screen
+  final Color primaryBlue = const Color(0xFF2196F3);
+  final Color backgroundColor = const Color(0xFFF5F7FA);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackgroundColor,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text('My Appointments', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.primaryColor,
+        backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.glassmorphismGradient,
-        ),
-        child: appointments.isEmpty
-            ? Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.calendar_today, size: 80, color: AppColors.lightGrey),
-                SizedBox(height: 20),
-                Text(
-                  'No upcoming appointments.',
-                  style: TextStyle(fontSize: 18, color: AppColors.lightGrey),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
+      body: appointments.isEmpty
+          ? Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.calendar_today, size: 80, color: AppColors.lightGrey),
+              SizedBox(height: 20),
+              Text(
+                'No upcoming appointments.',
+                style: TextStyle(fontSize: 18, color: AppColors.lightGrey),
+                textAlign: TextAlign.center,
+              ),
+            ],
           ),
-        )
-            : ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: appointments.length,
-          itemBuilder: (context, index) {
-            final appointment = appointments[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: Icon(
-                  Icons.person,
-                  color: AppColors.primaryColor,
-                ),
-                title: Text(
-                  appointment['doctor']!,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text('${appointment['specialization']!}\n${appointment['date']!} at ${appointment['time']!}'),
-                trailing: Text(
-                  appointment['status']!,
-                  style: TextStyle(
-                    color: appointment['status'] == 'upcoming' ? AppColors.green : AppColors.darkGrey,
-                    fontWeight: FontWeight.bold,
-                  ),
+        ),
+      )
+          : ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: appointments.length,
+        itemBuilder: (context, index) {
+          final appointment = appointments[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Icon(
+                Icons.person,
+                color: primaryBlue,
+              ),
+              title: Text(
+                appointment['doctor']!,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text('${appointment['specialization']!}\n${appointment['date']!} at ${appointment['time']!}'),
+              trailing: Text(
+                appointment['status']!,
+                style: TextStyle(
+                  color: appointment['status'] == 'upcoming' ? AppColors.green : AppColors.darkGrey,
+                  fontWeight: FontWeight.bold,
                 ),
               ),
-            );
-          },
-        ),
+            ),
+          );
+        },
       ),
     );
   }

@@ -12,6 +12,13 @@ class AppColors {
   static const Color orange = Color(0xFFFF9800);
   static const Color red = Color(0xFFF44336);
 
+  // New colors for the specialist cards
+  static const Color lightBlue = Color(0xFFE3F2FD);
+  static const Color lightGreen = Color(0xFFE8F5E9);
+  static const Color lightPurple = Color(0xFFF3E5F5);
+  static const Color lightYellow = Color(0xFFFFFDE7);
+  static const Color lightRed = Color(0xFFFFEBF1);
+
   // Glassmorphism gradient colors
   static const Color gradientStart = Color(0xFF4A90E2);
   static const Color gradientMid1 = Color(0xFF357ABD);

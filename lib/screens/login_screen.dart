@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/services/auth_service.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class LoginScreen extends StatefulWidget {
   @override
@@ -22,15 +23,13 @@ class _LoginScreenState extends State<LoginScreen> {
       body: Container(
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF4A90E2),
-              Color(0xFF357ABD),
-              Color(0xFF2C5F95),
-              Color(0xFF1A3B6B),
+              Color(0xFFE8F4FD), // Very light blue
+              Color(0xFFF0F9FF), // Almost white blue
+              Color(0xFFE0F2F1), // Very light teal
             ],
-            stops: [0.0, 0.3, 0.7, 1.0],
           ),
         ),
         child: SafeArea(
@@ -41,122 +40,226 @@ class _LoginScreenState extends State<LoginScreen> {
                 child: Form(
                   key: _formKey,
                   child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
-                      Center(
-                        child: Container(
-                          padding: EdgeInsets.all(16),
-                          decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.2),
-                            shape: BoxShape.circle,
-                            border: Border.all(
-                              color: Colors.white.withOpacity(0.3),
-                              width: 1,
+                      // Logo section
+                      Container(
+                        padding: EdgeInsets.all(16),
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          shape: BoxShape.circle,
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF42A5F5).withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: Offset(0, 8),
                             ),
+                          ],
+                        ),
+                        child: Container(
+                          padding: EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            gradient: LinearGradient(
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Color(0xFF4A90E2),
+                                Color(0xFF4A90E2),
+                              ],
+                            ),
+                            shape: BoxShape.circle,
                           ),
                           child: Icon(Icons.medical_services, size: 40, color: Colors.white),
                         ),
                       ),
-                      SizedBox(height: 12),
-                      Center(
-                        child: Text(
-                          'Connecting Care, Empowering Health\nWelcome to SmartCare',
-                          textAlign: TextAlign.center,
-                          style: TextStyle(
-                            fontSize: 18,
-                            fontWeight: FontWeight.bold,
-                            color: Colors.white,
+                      SizedBox(height: 20),
+                      // Welcome text
+                      Text(
+                        'Welcome Back',
+                        style: TextStyle(
+                          fontSize: 28,
+                          fontWeight: FontWeight.bold,
+                          color: Color(0xFF4A90E2),
+                        ),
+                      ),
+                      SizedBox(height: 8),
+                      Text(
+                        'Sign in to continue your healthcare journey',
+                        textAlign: TextAlign.center,
+                        style: TextStyle(
+                          fontSize: 16,
+                          color: Color(0xFF546E7A),
+                        ),
+                      ),
+                      SizedBox(height: 32),
+                      // User type selection
+                      Text(
+                        'Select Account Type',
+                        style: TextStyle(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w600,
+                          color: Color(0xFF4A90E2),
+                        ),
+                      ),
+                      SizedBox(height: 16),
+                      Row(
+                        children: [
+                          Expanded(child: _buildUserTypeCard('Patient', Icons.person)),
+                          SizedBox(width: 12),
+                          Expanded(child: _buildUserTypeCard('Doctor', Icons.local_hospital)),
+                          SizedBox(width: 12),
+                          Expanded(child: _buildUserTypeCard('Pharmacy', Icons.local_pharmacy)),
+                        ],
+                      ),
+                      SizedBox(height: 28),
+                      // Email field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF4A90E2).withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: TextFormField(
+                          controller: _emailController,
+                          keyboardType: TextInputType.emailAddress,
+                          style: TextStyle(color: Color(0xFF4A90E2), fontSize: 16),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return 'Please enter your email';
+                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
+                              return 'Please enter a valid email';
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Email',
+                            labelStyle: TextStyle(color: Color(0xFF546E7A)),
+                            prefixIcon: Icon(Icons.email_outlined, color: Color(0xFF4A90E2)),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           ),
                         ),
                       ),
-                      SizedBox(height: 20),
-                      Center(
-                        child: Text(
-                          'Sign in to continue',
-                          style: TextStyle(
-                            fontSize: 16,
-                            color: Colors.white.withOpacity(0.8),
+                      SizedBox(height: 16),
+                      // Password field
+                      Container(
+                        decoration: BoxDecoration(
+                          color: Colors.white,
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF4A90E2).withOpacity(0.1),
+                              blurRadius: 10,
+                              offset: Offset(0, 4),
+                            ),
+                          ],
+                        ),
+                        child: TextFormField(
+                          controller: _passwordController,
+                          obscureText: _obscurePassword,
+                          style: TextStyle(color: Color(0xFF4A90E2), fontSize: 16),
+                          validator: (value) {
+                            if (value == null || value.isEmpty) return 'Please enter your password';
+                            if (value.length < 6) return 'Password must be at least 6 characters';
+                            return null;
+                          },
+                          decoration: InputDecoration(
+                            labelText: 'Password',
+                            labelStyle: TextStyle(color: Color(0xFF546E7A)),
+                            prefixIcon: Icon(Icons.lock_outlined, color: Color(0xFF4A90E2)),
+                            suffixIcon: IconButton(
+                              icon: Icon(
+                                _obscurePassword ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+                                color: Color(0xFF4A90E2),
+                              ),
+                              onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
+                            ),
+                            border: OutlineInputBorder(
+                              borderRadius: BorderRadius.circular(12),
+                              borderSide: BorderSide.none,
+                            ),
+                            filled: true,
+                            fillColor: Colors.transparent,
+                            contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
                           ),
                         ),
                       ),
                       SizedBox(height: 24),
-                      Row(
-                        mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                        children: [
-                          _buildUserTypeCard('Patient', Icons.person),
-                          _buildUserTypeCard('Doctor', Icons.local_hospital),
-                          _buildUserTypeCard('Pharmacy', Icons.local_pharmacy),
-                        ],
-                      ),
-                      SizedBox(height: 20),
-                      TextFormField(
-                        controller: _emailController,
-                        keyboardType: TextInputType.emailAddress,
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Please enter your email';
-                          if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value))
-                            return 'Please enter a valid email';
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          labelText: 'Email',
-                          labelStyle: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-                          prefixIcon: Icon(Icons.email, color: Colors.white.withOpacity(0.8), size: 20),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.2),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      SizedBox(height: 12),
-                      TextFormField(
-                        controller: _passwordController,
-                        obscureText: _obscurePassword,
-                        style: TextStyle(color: Colors.white, fontSize: 14),
-                        validator: (value) {
-                          if (value == null || value.isEmpty) return 'Please enter your password';
-                          if (value.length < 6) return 'Password must be at least 6 characters';
-                          return null;
-                        },
-                        decoration: InputDecoration(
-                          labelText: 'Password',
-                          labelStyle: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-                          prefixIcon: Icon(Icons.lock, color: Colors.white.withOpacity(0.8), size: 20),
-                          suffixIcon: IconButton(
-                            icon: Icon(_obscurePassword ? Icons.visibility : Icons.visibility_off, color: Colors.white.withOpacity(0.8)),
-                            onPressed: () => setState(() => _obscurePassword = !_obscurePassword),
-                          ),
-                          filled: true,
-                          fillColor: Colors.white.withOpacity(0.2),
-                          border: OutlineInputBorder(borderRadius: BorderRadius.circular(12)),
-                        ),
-                      ),
-                      SizedBox(height: 16),
-                      SizedBox(
+                      // Login button
+                      Container(
                         width: double.infinity,
-                        height: 44,
+                        height: 56,
+                        decoration: BoxDecoration(
+                          gradient: LinearGradient(
+                            begin: Alignment.centerLeft,
+                            end: Alignment.centerRight,
+                            colors: [
+                              Color(0xFF42A5F5),
+                              Color(0xFF42A5F5),
+                            ],
+                          ),
+                          borderRadius: BorderRadius.circular(12),
+                          boxShadow: [
+                            BoxShadow(
+                              color: Color(0xFF42A5F5).withOpacity(0.3),
+                              blurRadius: 15,
+                              offset: Offset(0, 8),
+                            ),
+                          ],
+                        ),
                         child: ElevatedButton(
                           onPressed: _isLoading ? null : _handleLogin,
                           style: ElevatedButton.styleFrom(
-                            backgroundColor: Colors.white,
-                            foregroundColor: Color(0xFF2C5F95),
+                            backgroundColor: Colors.transparent,
+                            shadowColor: Colors.transparent,
                             shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
                           ),
                           child: _isLoading
-                              ? SizedBox(height: 20, width: 20, child: CircularProgressIndicator(color: Color(0xFF2C5F95), strokeWidth: 2))
-                              : Text('Login', style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold)),
+                              ? SizedBox(
+                            height: 24,
+                            width: 24,
+                            child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                          )
+                              : Text(
+                            'Sign In',
+                            style: TextStyle(
+                              fontSize: 18,
+                              fontWeight: FontWeight.bold,
+                              color: Colors.white,
+                            ),
+                          ),
                         ),
                       ),
-                      SizedBox(height: 16),
-                      Center(
-                        child: TextButton(
-                          onPressed: () => Navigator.pushNamed(context, '/register'),
-                          child: RichText(
-                            text: TextSpan(
-                              text: 'Don\'t have an account? ',
-                              style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
-                              children: [TextSpan(text: 'Register', style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold, fontSize: 13))],
-                            ),
+                      SizedBox(height: 24),
+                      // Register link
+                      TextButton(
+                        onPressed: () => Navigator.pushNamed(context, '/register'),
+                        style: TextButton.styleFrom(
+                          padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
+                        ),
+                        child: RichText(
+                          text: TextSpan(
+                            text: 'Don\'t have an account? ',
+                            style: TextStyle(color: Color(0xFF546E7A), fontSize: 16),
+                            children: [
+                              TextSpan(
+                                text: 'Sign Up',
+                                style: TextStyle(
+                                  color: Color(0xFF42A5F5),
+                                  fontWeight: FontWeight.bold,
+                                  fontSize: 16,
+                                ),
+                              ),
+                            ],
                           ),
                         ),
                       ),
@@ -176,19 +279,42 @@ class _LoginScreenState extends State<LoginScreen> {
     return GestureDetector(
       onTap: () => setState(() => selectedUserType = type),
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(vertical: 12, horizontal: 10),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(color: isSelected ? Colors.white : Colors.white.withOpacity(0.3), width: 2),
-          boxShadow: isSelected ? [BoxShadow(color: Colors.white.withOpacity(0.3), blurRadius: 8, offset: Offset(0, 4))] : [],
-        ),
+        duration: Duration(milliseconds: 300),
         child: Column(
           children: [
-            Icon(icon, color: isSelected ? Color(0xFF2C5F95) : Colors.white, size: 26),
-            SizedBox(height: 6),
-            Text(type, style: TextStyle(color: isSelected ? Color(0xFF2C5F95) : Colors.white, fontWeight: FontWeight.w600, fontSize: 11)),
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFF42A5F5) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? Color(0xFF42A5F5) : Color(0xFFE0E0E0),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isSelected ? Color(0xFF42A5F5).withOpacity(0.3) : Colors.grey.withOpacity(0.1),
+                    blurRadius: isSelected ? 15 : 8,
+                    offset: Offset(0, isSelected ? 8 : 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : Color(0xFF42A5F5),
+                size: 32,
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              type,
+              style: TextStyle(
+                color: isSelected ? Color(0xFF42A5F5) : Color(0xFF546E7A),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 14,
+              ),
+            ),
           ],
         ),
       ),

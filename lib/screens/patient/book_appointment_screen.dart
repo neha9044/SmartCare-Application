@@ -18,10 +18,22 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   final AuthService _authService = AuthService();
   DateTime _selectedDate = DateTime.now();
   String? _selectedTimeSlot;
+  DateTime _currentMonth = DateTime.now();
+
+  // Healthcare theme colors from home screen
+  final Color primaryBlue = const Color(0xFF2196F3);
+  final Color lightBlue = const Color(0xFFE3F2FD);
+  final Color darkBlue = const Color(0xFF1976D2);
+  final Color backgroundColor = const Color(0xFFF5F7FA);
+
+  @override
+  void initState() {
+    super.initState();
+    _currentMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+  }
 
   @override
   Widget build(BuildContext context) {
-    // Corrected logic to safely get initials
     String initials = '';
     if (widget.doctor.name.isNotEmpty) {
       List<String> nameParts = widget.doctor.name.split(' ');
@@ -34,40 +46,50 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     }
 
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackgroundColor,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Book Appointment', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.primaryColor,
+        title: const Text('Book Appointment', style: TextStyle(color: Colors.white, fontSize: 18)),
+        backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
+        elevation: 0,
       ),
-      body: SingleChildScrollView(
+      body: Padding(
         padding: const EdgeInsets.all(16),
         child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // Compact Doctor Info
             Container(
-              width: double.infinity,
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
                 color: Colors.white,
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(16),
                 boxShadow: [
                   BoxShadow(
-                    color: Colors.grey.withOpacity(0.1),
-                    spreadRadius: 2,
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
+                    color: primaryBlue.withOpacity(0.1),
+                    blurRadius: 10,
+                    offset: const Offset(0, 3),
                   ),
                 ],
               ),
               child: Row(
                 children: [
-                  CircleAvatar(
-                    radius: 25,
-                    backgroundColor: AppColors.primaryColor,
-                    child: Text(
-                      initials.toUpperCase(),
-                      style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                  Container(
+                    width: 50,
+                    height: 50,
+                    decoration: BoxDecoration(
+                      color: primaryBlue.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                      border: Border.all(color: primaryBlue.withOpacity(0.2)),
+                    ),
+                    child: Center(
+                      child: Text(
+                        initials.toUpperCase(),
+                        style: TextStyle(
+                          color: primaryBlue,
+                          fontWeight: FontWeight.bold,
+                          fontSize: 16,
+                        ),
+                      ),
                     ),
                   ),
                   const SizedBox(width: 12),
@@ -76,143 +98,263 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          widget.doctor.name,
-                          style: const TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
+                          'Dr. ${widget.doctor.name}',
+                          style: TextStyle(
+                            fontSize: 16,
+                            fontWeight: FontWeight.bold,
+                            color: darkBlue,
+                          ),
                         ),
                         Text(
                           widget.doctor.specialization,
-                          style: const TextStyle(color: AppColors.primaryColor, fontSize: 14),
-                        ),
-                        Text(
-                          '₹${widget.doctor.consultationFee}',
-                          style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                          style: TextStyle(
+                            color: primaryBlue,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
+                          ),
                         ),
                       ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      '₹${widget.doctor.consultationFee.toInt()}',
+                      style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF4CAF50),
+                      ),
                     ),
                   ),
                 ],
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Select Date',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            SizedBox(
-              height: 100,
-              child: ListView.builder(
-                scrollDirection: Axis.horizontal,
-                itemCount: 7,
-                itemBuilder: (context, index) {
-                  DateTime date = DateTime.now().add(Duration(days: index));
-                  bool isSelected = _selectedDate.day == date.day;
-                  return GestureDetector(
-                    onTap: () {
-                      setState(() {
-                        _selectedDate = date;
-                        _selectedTimeSlot = null;
-                      });
-                    },
-                    child: Container(
-                      width: 80,
-                      margin: const EdgeInsets.only(right: 12),
-                      decoration: BoxDecoration(
-                        color: isSelected ? AppColors.primaryColor : Colors.white,
-                        borderRadius: BorderRadius.circular(12),
-                        boxShadow: [
-                          BoxShadow(
-                            color: Colors.grey.withOpacity(0.1),
-                            spreadRadius: 1,
-                            blurRadius: 4,
-                            offset: const Offset(0, 2),
-                          ),
-                        ],
-                      ),
-                      child: Column(
-                        mainAxisAlignment: MainAxisAlignment.center,
+
+            // Calendar Section
+            Expanded(
+              flex: 2,
+              child: Container(
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryBlue.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
+                    ),
+                  ],
+                ),
+                child: Column(
+                  children: [
+                    // Calendar Header
+                    Padding(
+                      padding: const EdgeInsets.all(16),
+                      child: Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
                         children: [
                           Text(
-                            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'][date.weekday % 7],
+                            'Select Date',
                             style: TextStyle(
-                              color: isSelected ? Colors.white : AppColors.darkGrey,
-                              fontSize: 12,
-                            ),
-                          ),
-                          const SizedBox(height: 4),
-                          Text(
-                            '${date.day}',
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : Colors.black,
-                              fontSize: 20,
+                              fontSize: 16,
                               fontWeight: FontWeight.bold,
+                              color: darkBlue,
                             ),
                           ),
-                          Text(
-                            ['Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-                              'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'][date.month - 1],
-                            style: TextStyle(
-                              color: isSelected ? Colors.white : AppColors.darkGrey,
-                              fontSize: 12,
-                            ),
+                          Row(
+                            mainAxisSize: MainAxisSize.min,
+                            children: [
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: _currentMonth.month > DateTime.now().month ||
+                                    _currentMonth.year > DateTime.now().year ? () {
+                                  setState(() {
+                                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
+                                  });
+                                } : null,
+                                icon: Icon(
+                                  Icons.chevron_left,
+                                  color: (_currentMonth.month > DateTime.now().month ||
+                                      _currentMonth.year > DateTime.now().year)
+                                      ? primaryBlue : Colors.grey[400],
+                                  size: 20,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              Text(
+                                '${_getMonthName(_currentMonth.month)} ${_currentMonth.year}',
+                                style: TextStyle(
+                                  fontSize: 14,
+                                  fontWeight: FontWeight.w600,
+                                  color: darkBlue,
+                                ),
+                              ),
+                              const SizedBox(width: 8),
+                              IconButton(
+                                padding: EdgeInsets.zero,
+                                constraints: const BoxConstraints(),
+                                onPressed: _canGoToNextMonth() ? () {
+                                  setState(() {
+                                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+                                  });
+                                } : null,
+                                icon: Icon(
+                                  Icons.chevron_right,
+                                  color: _canGoToNextMonth() ? primaryBlue : Colors.grey[400],
+                                  size: 20,
+                                ),
+                              ),
+                            ],
                           ),
                         ],
                       ),
                     ),
-                  );
-                },
+                    // Calendar Grid
+                    Expanded(
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(horizontal: 16),
+                        child: Column(
+                          children: [
+                            // Weekday headers
+                            Row(
+                              children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
+                                  .map((day) => Expanded(
+                                child: Center(
+                                  child: Text(
+                                    day,
+                                    style: TextStyle(
+                                      fontSize: 10,
+                                      fontWeight: FontWeight.w600,
+                                      color: Colors.grey[600],
+                                    ),
+                                  ),
+                                ),
+                              ))
+                                  .toList(),
+                            ),
+                            const SizedBox(height: 8),
+                            // Calendar days
+                            Expanded(child: _buildCalendarGrid()),
+                          ],
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                  ],
+                ),
               ),
             ),
             const SizedBox(height: 20),
-            const Text(
-              'Available Time Slots',
-              style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-            ),
-            const SizedBox(height: 12),
-            Wrap(
-              spacing: 12.0,
-              runSpacing: 8.0,
-              children: widget.doctor.availableSlots.map((slot) {
-                bool isSelected = _selectedTimeSlot == slot;
-                return GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _selectedTimeSlot = slot;
-                    });
-                  },
-                  child: Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                    decoration: BoxDecoration(
-                      color: isSelected ? AppColors.primaryColor : Colors.white,
-                      borderRadius: BorderRadius.circular(8),
-                      border: Border.all(
-                        color: isSelected ? AppColors.primaryColor : AppColors.lightGrey,
-                      ),
+
+            // Time Slots Section
+            Expanded(
+              flex: 1,
+              child: Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  boxShadow: [
+                    BoxShadow(
+                      color: primaryBlue.withOpacity(0.1),
+                      blurRadius: 10,
+                      offset: const Offset(0, 3),
                     ),
-                    child: Text(
-                      slot,
+                  ],
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Available Time Slots',
                       style: TextStyle(
-                        color: isSelected ? Colors.white : Colors.black,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: darkBlue,
                       ),
                     ),
-                  ),
-                );
-              }).toList(),
+                    const SizedBox(height: 12),
+                    Expanded(
+                      child: Wrap(
+                        spacing: 8.0,
+                        runSpacing: 8.0,
+                        children: widget.doctor.availableSlots.map((slot) {
+                          bool isSelected = _selectedTimeSlot == slot;
+                          return GestureDetector(
+                            onTap: () {
+                              setState(() {
+                                _selectedTimeSlot = slot;
+                              });
+                            },
+                            child: Container(
+                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                              decoration: BoxDecoration(
+                                gradient: isSelected
+                                    ? LinearGradient(
+                                  colors: [primaryBlue, darkBlue],
+                                  begin: Alignment.topLeft,
+                                  end: Alignment.bottomRight,
+                                )
+                                    : null,
+                                color: isSelected ? null : lightBlue,
+                                borderRadius: BorderRadius.circular(12),
+                                border: Border.all(
+                                  color: isSelected ? primaryBlue : primaryBlue.withOpacity(0.3),
+                                  width: 1,
+                                ),
+                              ),
+                              child: Text(
+                                slot,
+                                style: TextStyle(
+                                  color: isSelected ? Colors.white : primaryBlue,
+                                  fontWeight: FontWeight.w600,
+                                  fontSize: 12,
+                                ),
+                              ),
+                            ),
+                          );
+                        }).toList(),
+                      ),
+                    ),
+                  ],
+                ),
+              ),
             ),
-            const SizedBox(height: 30),
+            const SizedBox(height: 20),
+
+            // Confirm Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
                 onPressed: _selectedTimeSlot != null ? () {
-                  _showBookingConfirmation();
+                  _showConfirmationDialog();
                 } : null,
-                child: const Text('Confirm Booking'),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primaryColor,
+                  backgroundColor: primaryBlue,
+                  disabledBackgroundColor: Colors.grey[300],
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 16),
-                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                  elevation: _selectedTimeSlot != null ? 6 : 0,
+                  shadowColor: primaryBlue.withOpacity(0.3),
+                ),
+                child: Text(
+                  'Confirm Booking',
+                  style: TextStyle(
+                    fontSize: 16,
+                    fontWeight: FontWeight.bold,
+                    color: _selectedTimeSlot != null ? Colors.white : Colors.grey[600],
+                  ),
                 ),
               ),
             ),
@@ -222,19 +364,205 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     );
   }
 
-  void _showBookingConfirmation() async {
-    // 1. Get current patient's ID and name
-    final patientId = _authService.currentUser?.uid;
-    if (patientId == null) {
-      // Handle the case where the patient is not logged in
-      return;
+  bool _canGoToNextMonth() {
+    DateTime nextMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
+    DateTime maxMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
+    return nextMonth.isBefore(maxMonth) || nextMonth.isAtSameMomentAs(maxMonth);
+  }
+
+  Widget _buildCalendarGrid() {
+    DateTime firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
+    DateTime lastDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+    int firstWeekday = firstDayOfMonth.weekday % 7;
+
+    List<DateTime> days = [];
+
+    // Add empty days for the first week
+    for (int i = 0; i < firstWeekday; i++) {
+      days.add(DateTime(0));
     }
+
+    // Add all days of the month
+    for (int day = 1; day <= lastDayOfMonth.day; day++) {
+      days.add(DateTime(_currentMonth.year, _currentMonth.month, day));
+    }
+
+    return GridView.builder(
+      gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
+        crossAxisCount: 7,
+        childAspectRatio: 1.0,
+        crossAxisSpacing: 4,
+        mainAxisSpacing: 4,
+      ),
+      itemCount: days.length,
+      itemBuilder: (context, index) {
+        DateTime date = days[index];
+        if (date.year == 0) {
+          return const SizedBox();
+        }
+
+        bool isToday = _isSameDay(date, DateTime.now());
+        bool isSelected = _isSameDay(date, _selectedDate);
+        bool isPastDate = date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+        bool isSelectable = !isPastDate;
+
+        return GestureDetector(
+          onTap: isSelectable ? () {
+            setState(() {
+              _selectedDate = date;
+              _selectedTimeSlot = null;
+            });
+          } : null,
+          child: Container(
+            decoration: BoxDecoration(
+              gradient: isSelected
+                  ? LinearGradient(
+                colors: [primaryBlue, darkBlue],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              )
+                  : null,
+              color: isSelected
+                  ? null
+                  : isToday
+                  ? lightBlue
+                  : null,
+              borderRadius: BorderRadius.circular(8),
+              border: isToday && !isSelected
+                  ? Border.all(color: primaryBlue, width: 1)
+                  : null,
+            ),
+            child: Center(
+              child: Text(
+                '${date.day}',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: isSelected
+                      ? Colors.white
+                      : isToday
+                      ? primaryBlue
+                      : isPastDate
+                      ? Colors.grey[400]
+                      : darkBlue,
+                ),
+              ),
+            ),
+          ),
+        );
+      },
+    );
+  }
+
+  bool _isSameDay(DateTime date1, DateTime date2) {
+    return date1.year == date2.year &&
+        date1.month == date2.month &&
+        date1.day == date2.day;
+  }
+
+  String _getMonthName(int month) {
+    const months = [
+      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
+      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+    ];
+    return months[month - 1];
+  }
+
+  void _showConfirmationDialog() {
+    showDialog(
+      context: context,
+      barrierDismissible: false,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+          title: Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(6),
+                decoration: BoxDecoration(
+                  color: primaryBlue.withOpacity(0.1),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Icon(
+                  Icons.event_available,
+                  color: primaryBlue,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 8),
+              const Expanded(
+                child: Text(
+                  'Confirm Appointment?',
+                  style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ],
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'Do you want to confirm this appointment?',
+                style: TextStyle(fontSize: 13, color: Colors.grey),
+              ),
+              const SizedBox(height: 12),
+              Container(
+                padding: const EdgeInsets.all(12),
+                decoration: BoxDecoration(
+                  color: lightBlue,
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'Details:',
+                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
+                    ),
+                    const SizedBox(height: 6),
+                    Text('Dr. ${widget.doctor.name}', style: const TextStyle(fontSize: 12)),
+                    Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}', style: const TextStyle(fontSize: 12)),
+                    Text('$_selectedTimeSlot', style: const TextStyle(fontSize: 12)),
+                    Text('₹${widget.doctor.consultationFee.toInt()}', style: const TextStyle(fontSize: 12)),
+                  ],
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.of(context).pop(),
+              child: const Text('Cancel'),
+            ),
+            ElevatedButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+                _showBookingConfirmation();
+              },
+              style: ElevatedButton.styleFrom(
+                backgroundColor: primaryBlue,
+                foregroundColor: Colors.white,
+                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+              ),
+              child: const Text('Confirm'),
+            ),
+          ],
+        );
+      },
+    );
+  }
+
+  void _showBookingConfirmation() async {
+    final patientId = _authService.currentUser?.uid;
+    if (patientId == null) return;
 
     try {
       final patientData = await _authService.getPatientData(patientId);
       final patientName = patientData['name'] as String? ?? 'Patient';
 
-      // 2. Save the appointment to Firestore
       await _authService.saveAppointment(
         doctorId: widget.doctor.id,
         patientId: patientId,
@@ -243,7 +571,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         time: _selectedTimeSlot!,
       );
 
-      // 3. Show a confirmation dialog
       Random random = Random();
       int queueNumber = random.nextInt(5) + 1;
 
@@ -251,49 +578,53 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
       showDialog(
         context: context,
+        barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            title: Row(
-              children: const [
-                Icon(Icons.check_circle, color: AppColors.green, size: 28),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            title: const Row(
+              children: [
+                Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 24),
                 SizedBox(width: 8),
-                Text('Booking Confirmed!'),
+                Text('Booking Confirmed!', style: TextStyle(fontSize: 16)),
               ],
             ),
             content: Column(
               mainAxisSize: MainAxisSize.min,
-              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                const Text('Your appointment has been successfully booked.'),
-                const SizedBox(height: 16),
+                const Text('Your appointment has been successfully booked.', style: TextStyle(fontSize: 13)),
+                const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
                   decoration: BoxDecoration(
-                    color: Colors.grey[100],
+                    color: lightBlue,
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      const Text('Appointment Details:', style: TextStyle(fontWeight: FontWeight.bold)),
-                      const SizedBox(height: 8),
-                      Text('Doctor: ${widget.doctor.name}'),
-                      Text('Date: ${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}'),
-                      Text('Time: $_selectedTimeSlot'),
-                      Text('Fee: ₹${widget.doctor.consultationFee}'),
-                      const SizedBox(height: 8),
-                      Text('You are number $queueNumber in the queue.', style: const TextStyle(fontWeight: FontWeight.bold, color: AppColors.primaryColor)),
+                      Text('Dr. ${widget.doctor.name}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
+                      Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year} at $_selectedTimeSlot', style: const TextStyle(fontSize: 12)),
+                      Text('Fee: ₹${widget.doctor.consultationFee.toInt()}', style: const TextStyle(fontSize: 12)),
+                      const SizedBox(height: 6),
+                      Text('Queue number: $queueNumber', style: TextStyle(fontWeight: FontWeight.bold, color: primaryBlue, fontSize: 12)),
                     ],
                   ),
                 ),
               ],
             ),
             actions: [
-              TextButton(
-                onPressed: () {
-                  Navigator.of(context).popUntil((route) => route.isFirst);
-                },
-                child: const Text('OK'),
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: primaryBlue,
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                  ),
+                  child: const Text('OK'),
+                ),
               ),
             ],
           );
@@ -301,10 +632,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to book appointment. Please try again.'),
-          backgroundColor: Colors.red,
-        ),
+        const SnackBar(content: Text('Failed to book appointment. Please try again.')),
       );
     }
   }

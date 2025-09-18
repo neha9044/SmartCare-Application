@@ -21,8 +21,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
   final _phoneController = TextEditingController();
   final _passwordController = TextEditingController();
   final _confirmPasswordController = TextEditingController();
-  final _specialtyController = TextEditingController(); // For doctors
-  final _licenseController = TextEditingController(); // For doctors/pharmacy
+  final _specialtyController = TextEditingController();
+  final _licenseController = TextEditingController();
 
   // NEW DOCTOR FIELDS
   final _experienceController = TextEditingController();
@@ -34,335 +34,366 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Set status bar to transparent
     SystemChrome.setSystemUIOverlayStyle(SystemUiOverlayStyle(
       statusBarColor: Colors.transparent,
-      statusBarIconBrightness: Brightness.light,
+      statusBarIconBrightness: Brightness.dark,
     ));
 
     return Scaffold(
-      backgroundColor: Color(0xFF4A90E2), // Set scaffold background color
       body: Container(
-        width: MediaQuery.of(context).size.width,
-        height: MediaQuery.of(context).size.height,
         decoration: BoxDecoration(
           gradient: LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
             colors: [
-              Color(0xFF4A90E2),
-              Color(0xFF357ABD),
-              Color(0xFF2C5F95),
-              Color(0xFF1A3B6B),
+              Color(0xFFE8F4FD),
+              Color(0xFFF0F9FF),
+              Color(0xFFE0F2F1),
             ],
-            stops: [0.0, 0.3, 0.7, 1.0],
           ),
         ),
-        child: Column(
-          children: [
-            // Custom AppBar
-            Container(
-              padding: EdgeInsets.only(
-                top: MediaQuery.of(context).padding.top + 8,
-                left: 16,
-                right: 16,
-                bottom: 8,
+        child: SafeArea(
+          child: Column(
+            children: [
+              // Custom AppBar
+              Container(
+                padding: EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                child: Row(
+                  children: [
+                    Container(
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(12),
+                        boxShadow: [
+                          BoxShadow(
+                            color: Color(0xFF42A5F5).withOpacity(0.1),
+                            blurRadius: 8,
+                            offset: Offset(0, 4),
+                          ),
+                        ],
+                      ),
+                      child: IconButton(
+                        icon: Icon(Icons.arrow_back, color: Color(0xFF42A5F5)),
+                        onPressed: () => Navigator.pop(context),
+                      ),
+                    ),
+                    Spacer(),
+                    Text(
+                      'Create Account',
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF42A5F5),
+                      ),
+                    ),
+                    Spacer(),
+                    SizedBox(width: 48), // Balance the back button
+                  ],
+                ),
               ),
-              child: Row(
-                children: [
-                  IconButton(
-                    icon: Icon(Icons.arrow_back, color: Colors.white),
-                    onPressed: () => Navigator.pop(context),
-                  ),
-                ],
-              ),
-            ),
-            // Content
-            Expanded(
-              child: SingleChildScrollView(
-                child: Padding(
-                  padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 12.0),
-                  child: Form(
-                    key: _formKey,
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Center(
-                          child: Text(
-                            'Join our healthcare community today',
-                            textAlign: TextAlign.center,
+              // Content
+              Expanded(
+                child: SingleChildScrollView(
+                  child: Padding(
+                    padding: EdgeInsets.symmetric(horizontal: 24.0, vertical: 16.0),
+                    child: Form(
+                      key: _formKey,
+                      child: Column(
+                        children: [
+                          // User type selection
+                          Text(
+                            'Select Account Type',
                             style: TextStyle(
-                              fontSize: 18,
-                              fontWeight: FontWeight.bold,
-                              color: Colors.white,
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF42A5F5),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 30),
-                        Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                          children: [
-                            _buildUserTypeCard('Patient', Icons.person),
-                            _buildUserTypeCard('Doctor', Icons.local_hospital),
-                            _buildUserTypeCard('Pharmacy', Icons.local_pharmacy),
+                          SizedBox(height: 16),
+                          Row(
+                            children: [
+                              Expanded(child: _buildUserTypeCard('Patient', Icons.person)),
+                              SizedBox(width: 12),
+                              Expanded(child: _buildUserTypeCard('Doctor', Icons.local_hospital)),
+                              SizedBox(width: 12),
+                              Expanded(child: _buildUserTypeCard('Pharmacy', Icons.local_pharmacy)),
+                            ],
+                          ),
+                          SizedBox(height: 24),
+                          // Form fields
+                          _buildTextField(
+                            controller: _nameController,
+                            label: 'Full Name',
+                            icon: Icons.person_outline,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your full name';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _emailController,
+                            label: 'Email',
+                            icon: Icons.email_outlined,
+                            keyboardType: TextInputType.emailAddress,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your email';
+                              }
+                              if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
+                                return 'Please enter a valid email';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _phoneController,
+                            label: 'Phone Number',
+                            icon: Icons.phone_outlined,
+                            keyboardType: TextInputType.phone,
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter your phone number';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+                          // Doctor-specific fields
+                          if (selectedUserType == 'Doctor') ...[
+                            _buildTextField(
+                              controller: _specialtyController,
+                              label: 'Specialty',
+                              icon: Icons.medical_services_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your specialty';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _experienceController,
+                              label: 'Years of Experience',
+                              icon: Icons.work_outline,
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your experience';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _qualificationController,
+                              label: 'Qualifications (e.g., MBBS, MD)',
+                              icon: Icons.school_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your qualifications';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _locationController,
+                              label: 'Your City/Location',
+                              icon: Icons.location_city_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your location';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _clinicNameController,
+                              label: 'Clinic Name',
+                              icon: Icons.business_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your clinic name';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _clinicLocationController,
+                              label: 'Clinic Address',
+                              icon: Icons.place_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your clinic address';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
+                            _buildTextField(
+                              controller: _consultationFeesController,
+                              label: 'Consultation Fees (\$)',
+                              icon: Icons.attach_money_outlined,
+                              keyboardType: TextInputType.number,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your consultation fees';
+                                }
+                                if (double.tryParse(value) == null) {
+                                  return 'Please enter a valid number';
+                                }
+                                return null;
+                              },
+                            ),
+                            SizedBox(height: 16),
                           ],
-                        ),
-                        SizedBox(height: 20),
-                        _buildTextField(
-                          controller: _nameController,
-                          label: 'Full Name',
-                          icon: Icons.person_outline,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your full name';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 10),
-                        _buildTextField(
-                          controller: _emailController,
-                          label: 'Email',
-                          icon: Icons.email_outlined,
-                          keyboardType: TextInputType.emailAddress,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your email';
-                            }
-                            if (!RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(value)) {
-                              return 'Please enter a valid email';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 10),
-                        _buildTextField(
-                          controller: _phoneController,
-                          label: 'Phone Number',
-                          icon: Icons.phone_outlined,
-                          keyboardType: TextInputType.phone,
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter your phone number';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 10),
-                        if (selectedUserType == 'Doctor') ...[
-                          _buildTextField(
-                            controller: _specialtyController,
-                            label: 'Specialty',
-                            icon: Icons.medical_services_outlined,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your specialty';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          _buildTextField(
-                            controller: _experienceController,
-                            label: 'Years of Experience',
-                            icon: Icons.work_outline,
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your experience';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          _buildTextField(
-                            controller: _qualificationController,
-                            label: 'Qualifications (e.g., MBBS, MD)',
-                            icon: Icons.school_outlined,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your qualifications';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          _buildTextField(
-                            controller: _locationController,
-                            label: 'Your City/Location',
-                            icon: Icons.location_city_outlined,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your location';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          _buildTextField(
-                            controller: _clinicNameController,
-                            label: 'Clinic Name',
-                            icon: Icons.business_outlined,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your clinic name';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          _buildTextField(
-                            controller: _clinicLocationController,
-                            label: 'Clinic Address',
-                            icon: Icons.place_outlined,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your clinic address';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                          // Find this code block
-                          _buildTextField(
-                            controller: _consultationFeesController,
-                            label: 'Consultation Fees (e.g., \$50)',
-                            icon: Icons.attach_money_outlined,
-                            keyboardType: TextInputType.number,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your consultation fees';
-                              }
-                              // ADD THIS VALIDATION
-                              if (double.tryParse(value) == null) {
-                                return 'Please enter a valid number';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                        ],
-                        if (selectedUserType == 'Doctor' || selectedUserType == 'Pharmacy') ...[
-                          _buildTextField(
-                            controller: _licenseController,
-                            label: selectedUserType == 'Doctor'
-                                ? 'Medical License Number'
-                                : 'Pharmacy License Number',
-                            icon: Icons.verified_outlined,
-                            validator: (value) {
-                              if (value == null || value.isEmpty) {
-                                return 'Please enter your license number';
-                              }
-                              return null;
-                            },
-                          ),
-                          SizedBox(height: 10),
-                        ],
-                        _buildTextField(
-                          controller: _passwordController,
-                          label: 'Password',
-                          icon: Icons.lock_outlined,
-                          isPassword: true,
-                          obscureText: _obscurePassword,
-                          onToggleVisibility: () {
-                            setState(() {
-                              _obscurePassword = !_obscurePassword;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please enter a password';
-                            }
-                            if (value.length < 6) {
-                              return 'Password must be at least 6 characters';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 10),
-                        _buildTextField(
-                          controller: _confirmPasswordController,
-                          label: 'Confirm Password',
-                          icon: Icons.lock_outlined,
-                          isPassword: true,
-                          obscureText: _obscureConfirmPassword,
-                          onToggleVisibility: () {
-                            setState(() {
-                              _obscureConfirmPassword = !_obscureConfirmPassword;
-                            });
-                          },
-                          validator: (value) {
-                            if (value == null || value.isEmpty) {
-                              return 'Please confirm your password';
-                            }
-                            if (value != _passwordController.text) {
-                              return 'Passwords do not match';
-                            }
-                            return null;
-                          },
-                        ),
-                        SizedBox(height: 20),
-                        SizedBox(
-                          width: double.infinity,
-                          height: 44,
-                          child: ElevatedButton(
-                            onPressed: _isLoading ? null : _handleRegistration,
-                            style: ElevatedButton.styleFrom(
-                              backgroundColor: Colors.white,
-                              foregroundColor: Color(0xFF2C5F95),
-                              shape: RoundedRectangleBorder(
-                                borderRadius: BorderRadius.circular(12),
-                              ),
+                          // License field for Doctor and Pharmacy
+                          if (selectedUserType == 'Doctor' || selectedUserType == 'Pharmacy') ...[
+                            _buildTextField(
+                              controller: _licenseController,
+                              label: selectedUserType == 'Doctor'
+                                  ? 'Medical License Number'
+                                  : 'Pharmacy License Number',
+                              icon: Icons.verified_outlined,
+                              validator: (value) {
+                                if (value == null || value.isEmpty) {
+                                  return 'Please enter your license number';
+                                }
+                                return null;
+                              },
                             ),
-                            child: _isLoading
-                                ? SizedBox(
-                              height: 20,
-                              width: 20,
-                              child: CircularProgressIndicator(color: Color(0xFF2C5F95), strokeWidth: 2),
-                            )
-                                : Text(
-                              'Create Account',
-                              style: TextStyle(
-                                fontSize: 16,
-                                fontWeight: FontWeight.bold,
+                            SizedBox(height: 16),
+                          ],
+                          // Password fields
+                          _buildTextField(
+                            controller: _passwordController,
+                            label: 'Password',
+                            icon: Icons.lock_outlined,
+                            isPassword: true,
+                            obscureText: _obscurePassword,
+                            onToggleVisibility: () {
+                              setState(() {
+                                _obscurePassword = !_obscurePassword;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please enter a password';
+                              }
+                              if (value.length < 6) {
+                                return 'Password must be at least 6 characters';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 16),
+                          _buildTextField(
+                            controller: _confirmPasswordController,
+                            label: 'Confirm Password',
+                            icon: Icons.lock_outlined,
+                            isPassword: true,
+                            obscureText: _obscureConfirmPassword,
+                            onToggleVisibility: () {
+                              setState(() {
+                                _obscureConfirmPassword = !_obscureConfirmPassword;
+                              });
+                            },
+                            validator: (value) {
+                              if (value == null || value.isEmpty) {
+                                return 'Please confirm your password';
+                              }
+                              if (value != _passwordController.text) {
+                                return 'Passwords do not match';
+                              }
+                              return null;
+                            },
+                          ),
+                          SizedBox(height: 32),
+                          // Register button
+                          Container(
+                            width: double.infinity,
+                            height: 56,
+                            decoration: BoxDecoration(
+                              gradient: LinearGradient(
+                                begin: Alignment.centerLeft,
+                                end: Alignment.centerRight,
+                                colors: [
+                                  Color(0xFF42A5F5),
+                                  Color(0xFF42A5F5),
+                                ],
+                              ),
+                              borderRadius: BorderRadius.circular(12),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Color(0xFF42A5F5).withOpacity(0.3),
+                                  blurRadius: 15,
+                                  offset: Offset(0, 8),
+                                ),
+                              ],
+                            ),
+                            child: ElevatedButton(
+                              onPressed: _isLoading ? null : _handleRegistration,
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: Colors.transparent,
+                                shadowColor: Colors.transparent,
+                                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+                              ),
+                              child: _isLoading
+                                  ? SizedBox(
+                                height: 24,
+                                width: 24,
+                                child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
+                              )
+                                  : Text(
+                                'Create Account',
+                                style: TextStyle(
+                                  fontSize: 18,
+                                  fontWeight: FontWeight.bold,
+                                  color: Colors.white,
+                                ),
                               ),
                             ),
                           ),
-                        ),
-                        SizedBox(height: 12),
-                        Center(
-                          child: TextButton(
-                            onPressed: () {
-                              Navigator.pop(context);
-                            },
+                          SizedBox(height: 24),
+                          // Login link
+                          TextButton(
+                            onPressed: () => Navigator.pop(context),
                             style: TextButton.styleFrom(
-                              padding: EdgeInsets.symmetric(horizontal: 12, vertical: 4),
+                              padding: EdgeInsets.symmetric(horizontal: 24, vertical: 12),
                             ),
                             child: RichText(
                               text: TextSpan(
                                 text: 'Already have an account? ',
-                                style: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 13),
+                                style: TextStyle(color: Color(0xFF546E7A), fontSize: 16),
                                 children: [
                                   TextSpan(
-                                    text: 'Login',
+                                    text: 'Sign In',
                                     style: TextStyle(
-                                      color: Colors.white,
+                                      color: Color(0xFF42A5F5),
                                       fontWeight: FontWeight.bold,
-                                      fontSize: 13,
+                                      fontSize: 16,
                                     ),
                                   ),
                                 ],
                               ),
                             ),
                           ),
-                        ),
-                      ],
+                          SizedBox(height: 20),
+                        ],
+                      ),
                     ),
                   ),
                 ),
               ),
-            ),
-          ],
+            ],
+          ),
         ),
       ),
     );
@@ -373,39 +404,40 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     return GestureDetector(
       onTap: () => setState(() => selectedUserType = type),
       child: AnimatedContainer(
-        duration: Duration(milliseconds: 200),
-        padding: EdgeInsets.symmetric(vertical: 10, horizontal: 8),
-        decoration: BoxDecoration(
-          color: isSelected ? Colors.white : Colors.white.withOpacity(0.2),
-          borderRadius: BorderRadius.circular(12),
-          border: Border.all(
-            color: isSelected ? Colors.white : Colors.white.withOpacity(0.3),
-            width: 2,
-          ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: Colors.white.withOpacity(0.3),
-              blurRadius: 8,
-              offset: Offset(0, 4),
-            )
-          ]
-              : [],
-        ),
+        duration: Duration(milliseconds: 300),
         child: Column(
           children: [
-            Icon(
-              icon,
-              color: isSelected ? Color(0xFF2C5F95) : Colors.white,
-              size: 24,
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                color: isSelected ? Color(0xFF42A5F5) : Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: isSelected ? Color(0xFF42A5F5) : Color(0xFFE0E0E0),
+                  width: 2,
+                ),
+                boxShadow: [
+                  BoxShadow(
+                    color: isSelected ? Color(0xFF42A5F5).withOpacity(0.3) : Colors.grey.withOpacity(0.1),
+                    blurRadius: isSelected ? 15 : 8,
+                    offset: Offset(0, isSelected ? 8 : 4),
+                  ),
+                ],
+              ),
+              child: Icon(
+                icon,
+                color: isSelected ? Colors.white : Color(0xFF42A5F5),
+                size: 32,
+              ),
             ),
-            SizedBox(height: 4),
+            SizedBox(height: 8),
             Text(
               type,
               style: TextStyle(
-                color: isSelected ? Color(0xFF2C5F95) : Colors.white,
-                fontWeight: FontWeight.w600,
-                fontSize: 10,
+                color: isSelected ? Color(0xFF42A5F5) : Color(0xFF546E7A),
+                fontWeight: isSelected ? FontWeight.bold : FontWeight.w500,
+                fontSize: 14,
               ),
             ),
           ],
@@ -424,44 +456,44 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
     TextInputType? keyboardType,
     String? Function(String?)? validator,
   }) {
-    return TextFormField(
-      controller: controller,
-      obscureText: obscureText,
-      keyboardType: keyboardType,
-      style: TextStyle(color: Colors.white, fontSize: 14),
-      validator: validator,
-      decoration: InputDecoration(
-        labelText: label,
-        labelStyle: TextStyle(color: Colors.white.withOpacity(0.8), fontSize: 14),
-        prefixIcon: Icon(icon, color: Colors.white.withOpacity(0.8), size: 20),
-        suffixIcon: isPassword
-            ? IconButton(
-          icon: Icon(
-            obscureText ? Icons.visibility : Icons.visibility_off,
-            color: Colors.white.withOpacity(0.8),
-            size: 20,
+    return Container(
+      decoration: BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Color(0xFF42A5F5).withOpacity(0.1),
+            blurRadius: 10,
+            offset: Offset(0, 4),
           ),
-          onPressed: onToggleVisibility,
-        )
-            : null,
-        filled: true,
-        fillColor: Colors.white.withOpacity(0.2),
-        contentPadding: EdgeInsets.symmetric(vertical: 10, horizontal: 16),
-        border: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-        ),
-        enabledBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white.withOpacity(0.3)),
-        ),
-        focusedBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.white, width: 2),
-        ),
-        errorBorder: OutlineInputBorder(
-          borderRadius: BorderRadius.circular(12),
-          borderSide: BorderSide(color: Colors.redAccent),
+        ],
+      ),
+      child: TextFormField(
+        controller: controller,
+        obscureText: obscureText,
+        keyboardType: keyboardType,
+        style: TextStyle(color: Color(0xFF42A5F5), fontSize: 16),
+        validator: validator,
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: TextStyle(color: Color(0xFF546E7A)),
+          prefixIcon: Icon(icon, color: Color(0xFF42A5F5)),
+          suffixIcon: isPassword
+              ? IconButton(
+            icon: Icon(
+              obscureText ? Icons.visibility_outlined : Icons.visibility_off_outlined,
+              color: Color(0xFF42A5F5),
+            ),
+            onPressed: onToggleVisibility,
+          )
+              : null,
+          border: OutlineInputBorder(
+            borderRadius: BorderRadius.circular(12),
+            borderSide: BorderSide.none,
+          ),
+          filled: true,
+          fillColor: Colors.transparent,
+          contentPadding: EdgeInsets.symmetric(horizontal: 16, vertical: 16),
         ),
       ),
     );

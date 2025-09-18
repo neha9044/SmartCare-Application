@@ -19,59 +19,58 @@ class PrescriptionsScreen extends StatelessWidget {
     },
   ];
 
+  // Healthcare theme colors from home screen
+  final Color primaryBlue = const Color(0xFF2196F3);
+  final Color backgroundColor = const Color(0xFFF5F7FA);
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: AppColors.scaffoldBackgroundColor,
+      backgroundColor: backgroundColor,
       appBar: AppBar(
         title: const Text('My Prescriptions', style: TextStyle(color: Colors.white)),
-        backgroundColor: AppColors.primaryColor,
+        backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
       ),
-      body: Container(
-        decoration: BoxDecoration(
-          gradient: AppColors.glassmorphismGradient,
-        ),
-        child: prescriptions.isEmpty
-            ? Center(
-          child: Padding(
-            padding: const EdgeInsets.all(16.0),
-            child: Column(
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                Icon(Icons.receipt_long, size: 80, color: AppColors.lightGrey),
-                SizedBox(height: 20),
-                Text(
-                  'No prescriptions found.',
-                  style: TextStyle(fontSize: 18, color: AppColors.lightGrey),
-                  textAlign: TextAlign.center,
-                ),
-              ],
-            ),
-          ),
-        )
-            : ListView.builder(
-          padding: const EdgeInsets.all(16),
-          itemCount: prescriptions.length,
-          itemBuilder: (context, index) {
-            final prescription = prescriptions[index];
-            return Card(
-              margin: const EdgeInsets.only(bottom: 12),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              child: ListTile(
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                leading: Icon(Icons.medical_services_outlined, color: AppColors.primaryColor),
-                title: Text(
-                  prescription['medication']!,
-                  style: TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text(
-                  'By ${prescription['doctor']!} on ${prescription['date']!}\nNotes: ${prescription['notes']!}',
-                ),
+      body: prescriptions.isEmpty
+          ? Center(
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(Icons.receipt_long, size: 80, color: AppColors.lightGrey),
+              SizedBox(height: 20),
+              Text(
+                'No prescriptions found.',
+                style: TextStyle(fontSize: 18, color: AppColors.lightGrey),
+                textAlign: TextAlign.center,
               ),
-            );
-          },
+            ],
+          ),
         ),
+      )
+          : ListView.builder(
+        padding: const EdgeInsets.all(16),
+        itemCount: prescriptions.length,
+        itemBuilder: (context, index) {
+          final prescription = prescriptions[index];
+          return Card(
+            margin: const EdgeInsets.only(bottom: 12),
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            child: ListTile(
+              contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+              leading: Icon(Icons.medical_services_outlined, color: primaryBlue),
+              title: Text(
+                prescription['medication']!,
+                style: TextStyle(fontWeight: FontWeight.bold),
+              ),
+              subtitle: Text(
+                'By ${prescription['doctor']!} on ${prescription['date']!}\nNotes: ${prescription['notes']!}',
+              ),
+            ),
+          );
+        },
       ),
     );
   }
