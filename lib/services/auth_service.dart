@@ -1,5 +1,6 @@
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:smartcare_app/utils/appointment_status.dart';
 
 class AuthService {
   final FirebaseAuth _auth = FirebaseAuth.instance;
@@ -165,6 +166,7 @@ class AuthService {
       'patientName': patientName,
       'date': Timestamp.fromDate(date),
       'time': time,
+      'status': AppointmentStatus.pending.toShortString(),
       'createdAt': FieldValue.serverTimestamp(),
     });
   }

@@ -1,3 +1,4 @@
+// doctor_dashboard.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -6,6 +7,8 @@ import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/services/auth_service.dart';
 import 'package:smartcare_app/screens/doctor/PrescriptionScreen.dart';
 import 'package:smartcare_app/screens/doctor/historyscreen.dart';
+import 'package:smartcare_app/utils/appointment_status.dart'; // New file
+import 'package:smartcare_app/screens/doctor/appointments_screen.dart';
 
 class DoctorHomeScreen extends StatefulWidget {
   const DoctorHomeScreen({Key? key}) : super(key: key);
@@ -295,76 +298,64 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
       child: Card(
         elevation: 5,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: Container(
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [
-                const Color(0xFF3498DB).withOpacity(0.1),
-                const Color(0xFF3498DB).withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AppointmentsScreen(doctorId: _currentDoctorId!),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF3498DB).withOpacity(0.1),
+                  const Color(0xFF3498DB).withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
             ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      width: 60,
-                      height: 60,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFF3498DB),
-                        borderRadius: BorderRadius.circular(15),
-                        boxShadow: [
-                          BoxShadow(
-                            color: const Color(0xFF3498DB).withOpacity(0.3),
-                            blurRadius: 10,
-                            offset: const Offset(0, 5),
-                          ),
-                        ],
-                      ),
-                      child: const Icon(Icons.queue, color: Colors.white, size: 30),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3498DB),
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3498DB).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
                     ),
-                    const SizedBox(width: 20),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const Text(
-                            "Queue Management",
-                            style: TextStyle(
-                              fontSize: 20,
-                              fontWeight: FontWeight.bold,
-                              color: Color(0xFF3498DB),
-                            ),
-                          ),
-                          const SizedBox(height: 8),
-                          Text(
-                            "$_queueCount patients waiting",
-                            style: const TextStyle(
-                              fontSize: 16,
-                              color: Colors.black54,
-                              fontStyle: FontStyle.italic,
-                            ),
-                          ),
-                        ],
+                    child: const Icon(Icons.queue, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Text(
+                      "Queue Management",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF3498DB),
                       ),
                     ),
-                  ],
-                ),
-                const SizedBox(height: 20),
-                const Text(
-                  "Upcoming Appointments",
-                  style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold),
-                ),
-                const SizedBox(height: 10),
-                _buildAppointmentsList(),
-              ],
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xFF3498DB),
+                  ),
+                ],
+              ),
             ),
           ),
         ),
@@ -504,12 +495,13 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildAppointmentsList() {
+  Widget _buildAppointmentsList(AppointmentStatus status) {
+    String statusString = status.toShortString();
     return StreamBuilder<QuerySnapshot>(
       stream: FirebaseFirestore.instance
           .collection('appointments')
           .where('doctorId', isEqualTo: _currentDoctorId)
-          .orderBy('createdAt', descending: false)
+          .where('status', isEqualTo: statusString)
           .snapshots(),
       builder: (context, snapshot) {
         if (snapshot.connectionState == ConnectionState.waiting) {
@@ -519,10 +511,10 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
           return const Center(child: Text('Error loading appointments.'));
         }
         if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return const Center(
+          return Center(
             child: Text(
-              'No appointments booked yet.',
-              style: TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+              'No ${statusString.toLowerCase()} appointments.',
+              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
             ),
           );
         }
@@ -530,17 +522,15 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
         final appointments = snapshot.data!.docs;
         _queueCount = appointments.length;
 
-        // Rebuild the parent widget to update the queue count
-        WidgetsBinding.instance.addPostFrameCallback((_) {
-          setState(() {});
-        });
+        // Sort appointments by date and time in ascending order
+        final sortedAppointments = _sortAppointments(appointments);
 
         return ListView.builder(
           shrinkWrap: true,
           physics: const NeverScrollableScrollPhysics(),
-          itemCount: appointments.length,
+          itemCount: sortedAppointments.length,
           itemBuilder: (context, index) {
-            final appointment = appointments[index];
+            final appointment = sortedAppointments[index];
             final appointmentData = appointment.data() as Map<String, dynamic>;
             final patientName = appointmentData['patientName'] ?? 'Unknown Patient';
             final time = appointmentData['time'] ?? 'N/A';
@@ -565,6 +555,7 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
                 trailing: const Icon(Icons.arrow_forward_ios, size: 16),
                 onTap: () {
                   // TODO: Navigate to patient profile or start chat
+                  // The logic to change appointment status would go here
                 },
               ),
             );
@@ -572,5 +563,37 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
         );
       },
     );
+  }
+
+  List<QueryDocumentSnapshot> _sortAppointments(List<QueryDocumentSnapshot> appointments) {
+    appointments.sort((a, b) {
+      final aData = a.data() as Map<String, dynamic>;
+      final bData = b.data() as Map<String, dynamic>;
+      final aDate = (aData['date'] as Timestamp).toDate();
+      final bDate = (bData['date'] as Timestamp).toDate();
+      final aTime = aData['time'] as String;
+      final bTime = bData['time'] as String;
+
+      int dateComparison = aDate.compareTo(bDate);
+      if (dateComparison != 0) {
+        return dateComparison;
+      }
+      return _parseTime(aTime).compareTo(_parseTime(bTime));
+    });
+    return appointments;
+  }
+
+  DateTime _parseTime(String time) {
+    final parts = time.split(':');
+    final hour = int.parse(parts[0]);
+    final minute = int.parse(parts[1].split(' ')[0]);
+    final period = parts[1].split(' ')[1];
+    int finalHour = hour;
+    if (period == 'PM' && hour != 12) {
+      finalHour += 12;
+    } else if (period == 'AM' && hour == 12) {
+      finalHour = 0;
+    }
+    return DateTime(1, 1, 1, finalHour, minute);
   }
 }
