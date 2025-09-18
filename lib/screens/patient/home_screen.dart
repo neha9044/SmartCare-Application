@@ -1,3 +1,5 @@
+// File: patient/home_screen.dart
+
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
@@ -7,6 +9,7 @@ import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/screens/patient/doctor_profile_screen.dart';
 import 'package:smartcare_app/screens/patient/profile_screen.dart';
 import 'book_appointment_screen.dart';
+import 'more_specialties_screen.dart';
 
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
@@ -251,9 +254,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _fetchAndSetDoctors() async {
     try {
-      final snapshot = await FirebaseFirestore.instance
-          .collection('doctors')
-          .get();
+      final snapshot = await FirebaseFirestore.instance.collection('doctors').get();
       _processDoctorData(snapshot.docs);
     } catch (e) {
       print('Error fetching doctors: $e');
@@ -276,8 +277,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
 
-      if (data['specialty'] == null ||
-          data['specialty'].toString().trim().isEmpty) {
+      if (data['specialty'] == null || data['specialty'].toString().trim().isEmpty) {
         continue;
       }
 
@@ -311,13 +311,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       uniqueSpecializations.add(specialization);
       uniqueLocations.add(doctor.location);
 
-      specializationCounts[specialization] =
-          (specializationCounts[specialization] ?? 0) + 1;
+      specializationCounts[specialization] = (specializationCounts[specialization] ?? 0) + 1;
     }
+
+    final sortedSpecializations = uniqueSpecializations.toList();
+    sortedSpecializations.sort((a, b) {
+      final countA = specializationCounts[a] ?? 0;
+      final countB = specializationCounts[b] ?? 0;
+      return countB.compareTo(countA);
+    });
 
     setState(() {
       _allDoctors = fetchedDoctors;
-      _specializations = uniqueSpecializations.toList();
+      _specializations = sortedSpecializations;
       _locations = uniqueLocations.toList();
       _specializationCounts = specializationCounts;
 
@@ -335,21 +341,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _filterDoctors() {
     setState(() {
       _filteredDoctors = _allDoctors.where((doctor) {
-        bool matchesSearch = doctor.name
-            .toLowerCase()
-            .contains(_searchController.text.toLowerCase()) ||
-            doctor.specialization
-                .toLowerCase()
-                .contains(_searchController.text.toLowerCase()) ||
-            doctor.hospital
-                .toLowerCase()
-                .contains(_searchController.text.toLowerCase());
+        bool matchesSearch = doctor.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+            doctor.specialization.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+            doctor.hospital.toLowerCase().contains(_searchController.text.toLowerCase());
 
-        bool matchesSpecialization = _selectedSpecialization == 'All' ||
-            doctor.specialization == _selectedSpecialization;
+        bool matchesSpecialization = _selectedSpecialization == 'All' || doctor.specialization == _selectedSpecialization;
 
-        bool matchesLocation = _selectedLocation == 'All' ||
-            doctor.location == _selectedLocation;
+        bool matchesLocation = _selectedLocation == 'All' || doctor.location == _selectedLocation;
 
         return matchesSearch && matchesSpecialization && matchesLocation;
       }).toList();
@@ -644,11 +642,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSpecialtiesSection() {
-    // Get all available specialties from configuration
-    final availableSpecialties = _specialtyConfig.keys.toList();
-
-    // Show only the first 5 specialties for the new layout
-    final displaySpecialties = availableSpecialties.take(5).toList();
+    final displaySpecialties = _specializations.take(5).toList();
+    final hasMore = _specializations.length > 5;
+    final displayCount = displaySpecialties.length + (hasMore ? 1 : 0);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -673,7 +669,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Text(
-                  '${displaySpecialties.length} specialties',
+                  '${_specializations.length} specialties',
                   style: const TextStyle(
                     fontSize: 11,
                     color: Colors.white,
@@ -685,37 +681,33 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           ),
         ),
         const SizedBox(height: 16),
-        // Grid layout for specialty cards
         Padding(
           padding: const EdgeInsets.symmetric(horizontal: 24),
           child: GridView.builder(
             shrinkWrap: true,
             physics: const NeverScrollableScrollPhysics(),
             gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              // Changed from 4 to 3
               crossAxisCount: 3,
               crossAxisSpacing: 12,
               mainAxisSpacing: 12,
               childAspectRatio: 0.85,
             ),
-            // Changed from 18 to 5
-            itemCount: displaySpecialties.length,
+            itemCount: displayCount,
             itemBuilder: (context, index) {
-              final specialty = displaySpecialties[index];
-              final config = _specialtyConfig[specialty]!;
-              final count = _specializationCounts[specialty] ??
-                  (specialty == 'General Physician' ? 15 :
-                  specialty == 'Cardiologist' ? 12 :
-                  specialty == 'Dermatologist' ? 8 :
-                  specialty == 'Pediatrician' ? 10 : 5);
-
-              return _buildSpecialtyCard(
-                specialty,
-                config['icon'],
-                config['color'],
-                config['lightColor'],
-                count,
-              );
+              if (index < displaySpecialties.length) {
+                final specialty = displaySpecialties[index];
+                final config = _specialtyConfig[specialty];
+                final count = _specializationCounts[specialty] ?? 0;
+                return _buildSpecialtyCard(
+                  specialty,
+                  config?['icon'] ?? Icons.local_hospital,
+                  config?['color'] ?? primaryBlue,
+                  config?['lightColor'] ?? lightBlue,
+                  count,
+                );
+              } else {
+                return _buildMoreCard();
+              }
             },
           ),
         ),
@@ -738,37 +730,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeInOut,
         decoration: BoxDecoration(
-          gradient: isSelected
-              ? LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              color,
-              color.withOpacity(0.8),
-            ],
-          )
-              : LinearGradient(
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-            colors: [
-              lightColor,
-              lightColor.withOpacity(0.7),
-            ],
-          ),
+          color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: isSelected ? color : color.withOpacity(0.2),
             width: isSelected ? 2 : 1,
           ),
-          boxShadow: isSelected
-              ? [
-            BoxShadow(
-              color: color.withOpacity(0.5),
-              blurRadius: 20,
-              offset: const Offset(0, 10),
-            ),
-          ]
-              : [
+          boxShadow: [
             BoxShadow(
               color: Colors.grey.withOpacity(0.15),
               blurRadius: 10,
@@ -782,19 +750,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             mainAxisAlignment: MainAxisAlignment.center,
             mainAxisSize: MainAxisSize.min,
             children: [
-              Container(
-                padding: const EdgeInsets.all(8),
-                decoration: BoxDecoration(
-                  color: isSelected
-                      ? Colors.white.withOpacity(0.3)
-                      : color.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(12),
-                ),
-                child: Icon(
-                  icon,
-                  color: isSelected ? Colors.white : color,
-                  size: 20,
-                ),
+              CircleAvatar(
+                radius: 20,
+                backgroundColor: color.withOpacity(0.15),
+                child: Icon(icon, color: color, size: 20),
               ),
               const SizedBox(height: 6),
               Flexible(
@@ -804,7 +763,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w700,
-                    color: isSelected ? Colors.white : darkBlue,
+                    color: isSelected ? darkBlue : Colors.grey[800],
                     height: 1.2,
                   ),
                   maxLines: 2,
@@ -816,7 +775,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? Colors.white.withOpacity(0.25)
+                      ? color.withOpacity(0.25)
                       : color.withOpacity(0.15),
                   borderRadius: BorderRadius.circular(10),
                 ),
@@ -831,6 +790,65 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMoreCard() {
+    return GestureDetector(
+      onTap: () async {
+        final result = await Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (_) => MoreSpecialtiesScreen(
+              specialtyConfig: _specialtyConfig,
+              specializationCounts: _specializationCounts,
+              specializations: _specializations,
+            ),
+          ),
+        );
+
+        if (result != null && result is String) {
+          _onSpecialtyTapped(result);
+        }
+      },
+      child: Container(
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: primaryBlue.withOpacity(0.2), width: 1),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.grey.withOpacity(0.15),
+              blurRadius: 10,
+              offset: const Offset(0, 5),
+            ),
+          ],
+        ),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            CircleAvatar(
+              radius: 20,
+              backgroundColor: primaryBlue.withOpacity(0.15),
+              child: Icon(
+                Icons.more_horiz_rounded,
+                color: primaryBlue,
+                size: 20,
+              ),
+            ),
+            const SizedBox(height: 6),
+            Text(
+              'More',
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: darkBlue,
+                height: 1.2,
+              ),
+            ),
+          ],
         ),
       ),
     );
