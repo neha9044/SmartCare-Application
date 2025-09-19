@@ -1,9 +1,11 @@
+// lib/screens/patient/book_appointment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
+import 'package:smartcare_app/utils/appointment_status.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final Doctor doctor;
@@ -20,7 +22,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   String? _selectedTimeSlot;
   DateTime _currentMonth = DateTime.now();
 
-  // Healthcare theme colors from home screen
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color lightBlue = const Color(0xFFE3F2FD);
   final Color darkBlue = const Color(0xFF1976D2);
@@ -57,7 +58,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
-            // Compact Doctor Info
             Container(
               padding: const EdgeInsets.all(16),
               decoration: BoxDecoration(
@@ -135,8 +135,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Calendar Section
             Expanded(
               flex: 2,
               child: Container(
@@ -153,7 +151,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 ),
                 child: Column(
                   children: [
-                    // Calendar Header
                     Padding(
                       padding: const EdgeInsets.all(16),
                       child: Row(
@@ -216,13 +213,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                         ],
                       ),
                     ),
-                    // Calendar Grid
                     Expanded(
                       child: Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 16),
                         child: Column(
                           children: [
-                            // Weekday headers
                             Row(
                               children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
                                   .map((day) => Expanded(
@@ -240,7 +235,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                                   .toList(),
                             ),
                             const SizedBox(height: 8),
-                            // Calendar days
                             Expanded(child: _buildCalendarGrid()),
                           ],
                         ),
@@ -252,8 +246,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Time Slots Section
             Expanded(
               flex: 1,
               child: Container(
@@ -329,8 +321,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               ),
             ),
             const SizedBox(height: 20),
-
-            // Confirm Button
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
@@ -376,13 +366,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     int firstWeekday = firstDayOfMonth.weekday % 7;
 
     List<DateTime> days = [];
-
-    // Add empty days for the first week
     for (int i = 0; i < firstWeekday; i++) {
       days.add(DateTime(0));
     }
-
-    // Add all days of the month
     for (int day = 1; day <= lastDayOfMonth.day; day++) {
       days.add(DateTime(_currentMonth.year, _currentMonth.month, day));
     }
@@ -569,6 +555,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         patientName: patientName,
         date: _selectedDate,
         time: _selectedTimeSlot!,
+        status: AppointmentStatus.pending.toShortString(),
       );
 
       Random random = Random();

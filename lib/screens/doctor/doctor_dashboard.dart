@@ -1,46 +1,52 @@
-// doctor_dashboard.dart
+// lib/screens/doctor/doctor_dashboard.dart
 import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/services/auth_service.dart';
-import 'package:smartcare_app/screens/doctor/PrescriptionScreen.dart';
-import 'package:smartcare_app/screens/doctor/historyscreen.dart';
-import 'package:smartcare_app/utils/appointment_status.dart'; // New file
 import 'package:smartcare_app/screens/doctor/appointments_screen.dart';
+import 'package:smartcare_app/utils/appointment_status.dart';
+import 'package:table_calendar/table_calendar.dart';
+import 'package:smartcare_app/screens/doctor/patient_record_screen.dart';
+import 'package:smartcare_app/screens/doctor/DoctorProfileScreen.dart';
 
-class DoctorHomeScreen extends StatefulWidget {
-  const DoctorHomeScreen({Key? key}) : super(key: key);
+class DoctorDashboard extends StatefulWidget {
+  const DoctorDashboard({Key? key}) : super(key: key);
 
   @override
-  _DoctorHomeScreenState createState() => _DoctorHomeScreenState();
+  _DoctorDashboardState createState() => _DoctorDashboardState();
 }
 
-class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProviderStateMixin {
+class _DoctorDashboardState extends State<DoctorDashboard>
+    with TickerProviderStateMixin {
   final AuthService _authService = AuthService();
   String _doctorName = 'Doctor';
+  String _profileImageUrl = '';
   String? _currentDoctorId;
-  int _queueCount = 0;
+  Map<String, String> _doctorDetails = {};
 
-  // Animation controllers
   late AnimationController _fadeController;
   late Animation<double> _fadeAnimation;
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
 
-  // Healthcare theme colors
   final Color primaryBlue = const Color(0xFF2196F3);
-  final Color lightBlue = const Color(0xFFE3F2FD);
   final Color darkBlue = const Color(0xFF1976D2);
   final Color backgroundColor = const Color(0xFFF5F7FA);
+
+  DateTime _focusedDay = DateTime.now();
+  DateTime? _selectedDay;
+  late final ValueNotifier<List<QueryDocumentSnapshot>> _selectedAppointments;
 
   @override
   void initState() {
     super.initState();
     _currentDoctorId = _authService.currentUser?.uid;
     _setupAnimations();
-    _fetchAndSetData();
+    _fetchDoctorData();
+    _selectedDay = _focusedDay;
+    _selectedAppointments = ValueNotifier([]);
+    _getAppointmentsForDay(_selectedDay!);
   }
 
   void _setupAnimations() {
@@ -67,26 +73,49 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
     });
   }
 
-  Future<void> _fetchAndSetData() async {
-    await _fetchDoctorName();
-  }
-
-  Future<void> _fetchDoctorName() async {
+  Future<void> _fetchDoctorData() async {
     final user = FirebaseAuth.instance.currentUser;
     if (user != null) {
-      final doc = await FirebaseFirestore.instance
-          .collection('doctors')
-          .doc(user.uid)
-          .get();
-      if (doc.exists && doc.data() != null) {
-        final String? fullName = doc.data()!['name'];
+      final data = await _authService.getDoctorData(user.uid);
+      if (data.isNotEmpty) {
+        final String? fullName = data['name'];
+        final String? profileUrl = data['profileImageUrl'];
         if (fullName != null && fullName.isNotEmpty) {
           final List<String> nameParts = fullName.split(' ');
           setState(() {
             _doctorName = nameParts.first;
+            _profileImageUrl = profileUrl ?? '';
+            _doctorDetails['name'] = data['name'] ?? 'Dr. Alex Chen';
+            _doctorDetails['specialty'] = data['specialty'] ?? 'General Physician';
+            _doctorDetails['address'] = data['clinicAddress'] ?? 'N/A';
           });
         }
       }
+    }
+  }
+
+  Future<void> _getAppointmentsForDay(DateTime day) async {
+    if (_currentDoctorId == null) return;
+    final startOfDay = DateTime(day.year, day.month, day.day);
+    final endOfDay = startOfDay.add(const Duration(days: 1));
+
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('doctorId', isEqualTo: _currentDoctorId)
+        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+        .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+        .get();
+
+    _selectedAppointments.value = querySnapshot.docs;
+  }
+
+  void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
+    if (!isSameDay(_selectedDay, selectedDay)) {
+      setState(() {
+        _selectedDay = selectedDay;
+        _focusedDay = focusedDay;
+      });
+      _getAppointmentsForDay(selectedDay);
     }
   }
 
@@ -94,11 +123,16 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
   void dispose() {
     _fadeController.dispose();
     _slideController.dispose();
+    _selectedAppointments.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
+    if (_currentDoctorId == null) {
+      return const Center(child: Text('Doctor not logged in.'));
+    }
+
     return Scaffold(
       backgroundColor: backgroundColor,
       body: SafeArea(
@@ -111,15 +145,17 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _buildSliverHeader(),
+                  _buildStylishHeader(),
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 20),
+                        const SizedBox(height: 24),
                         _buildQueueManagementCard(),
-                        const SizedBox(height: 20),
-                        _buildDashboardCards(),
+                        const SizedBox(height: 24),
+                        _buildCalendarView(),
+                        const SizedBox(height: 24),
+                        _buildDailyAppointmentsList(),
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -133,159 +169,82 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildSliverHeader() {
+  Widget _buildStylishHeader() {
     return SliverToBoxAdapter(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            Row(
-              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      RichText(
-                        text: TextSpan(
-                          children: [
-                            TextSpan(
-                              text: 'Hello ',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.w400,
-                                color: Colors.grey[700],
-                              ),
-                            ),
-                            TextSpan(
-                              text: 'Dr. $_doctorName',
-                              style: TextStyle(
-                                fontSize: 28,
-                                fontWeight: FontWeight.bold,
-                                color: darkBlue,
-                              ),
-                            ),
-                          ],
-                        ),
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                      ),
-                      const SizedBox(height: 4),
-                      Text(
-                        'Welcome to your dashboard.',
-                        style: TextStyle(
-                          fontSize: 14,
-                          color: Colors.grey[600],
-                          fontWeight: FontWeight.w400,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                      const SizedBox(height: 12),
-                      _buildLocationSection(),
-                    ],
-                  ),
-                ),
-                Column(
-                  children: [
-                    _buildHeaderIconButton(
-                      Icons.chat_bubble_outline_rounded,
-                      const Color(0xFFFF6B9D),
-                          () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Chatbot coming soon!')),
-                        );
-                      },
-                    ),
-                    const SizedBox(height: 12),
-                    _buildHeaderIconButton(
-                      Icons.person_outline_rounded,
-                      primaryBlue,
-                          () {
-                        // TODO: Navigate to doctor profile screen
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Doctor Profile Screen coming soon!')),
-                        );
-                      },
-                    ),
-                  ],
-                ),
-              ],
+        margin: const EdgeInsets.all(20),
+        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
+        decoration: BoxDecoration(
+          gradient: LinearGradient(
+            colors: [primaryBlue, darkBlue],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          borderRadius: BorderRadius.circular(24),
+          boxShadow: [
+            BoxShadow(
+              color: darkBlue.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 6),
             ),
           ],
         ),
-      ),
-    );
-  }
-
-  Widget _buildHeaderIconButton(IconData icon, Color color, VoidCallback onTap) {
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: color.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: color.withOpacity(0.2), width: 1),
-      ),
-      child: IconButton(
-        icon: Icon(icon, color: color, size: 22),
-        onPressed: onTap,
-      ),
-    );
-  }
-
-  Widget _buildLocationSection() {
-    return Row(
-      children: [
-        Container(
-          padding: const EdgeInsets.all(6),
-          decoration: BoxDecoration(
-            color: primaryBlue.withOpacity(0.1),
-            borderRadius: BorderRadius.circular(10),
-          ),
-          child: Icon(
-            Icons.location_on_rounded,
-            color: primaryBlue,
-            size: 16,
-          ),
-        ),
-        const SizedBox(width: 8),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(
-                'Current Location',
-                style: TextStyle(
-                  fontSize: 11,
-                  color: Colors.grey[600],
-                  fontWeight: FontWeight.w500,
-                ),
+        child: Row(
+          children: [
+            GestureDetector(
+              onTap: () {
+                if (_currentDoctorId != null) {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) =>
+                          DoctorProfileScreen(doctorId: _currentDoctorId!),
+                    ),
+                  );
+                }
+              },
+              child: CircleAvatar(
+                radius: 36,
+                backgroundColor: Colors.white,
+                backgroundImage: _profileImageUrl.isNotEmpty
+                    ? NetworkImage(_profileImageUrl)
+                    : null,
+                child: _profileImageUrl.isEmpty
+                    ? Icon(Icons.person, color: darkBlue, size: 40)
+                    : null,
               ),
-              const SizedBox(height: 1),
-              Row(
+            ),
+            const SizedBox(width: 20),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    'Mumbai, India',
+                    "Welcome back,",
                     style: TextStyle(
-                      fontSize: 14,
-                      color: darkBlue,
-                      fontWeight: FontWeight.w600,
+                      fontSize: 16,
+                      color: Colors.white.withOpacity(0.9),
+                      fontWeight: FontWeight.w400,
                     ),
                   ),
-                  const SizedBox(width: 4),
-                  Icon(
-                    Icons.keyboard_arrow_down_rounded,
-                    color: Colors.grey[600],
-                    size: 16,
+                  const SizedBox(height: 6),
+                  Text(
+                    "Dr. $_doctorName",
+                    style: const TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.bold,
+                      color: Colors.white,
+                      letterSpacing: 0.5,
+                    ),
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
                   ),
                 ],
               ),
-            ],
-          ),
+            )
+          ],
         ),
-      ],
+      ),
     );
   }
 
@@ -363,42 +322,116 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildDashboardCards() {
+  Widget _buildCalendarView() {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          _buildDashboardCard(
-            context: context,
-            title: "Chat with Patients",
-            subtitle: "Real-time communication",
-            icon: Icons.chat_bubble_outline,
-            color: const Color(0xFF2C3E50),
-            route: '/patientList',
+          const Text(
+            'Schedule',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
           ),
-          _buildDashboardCard(
-            context: context,
-            title: "Prescriptions",
-            subtitle: "Manage and send prescriptions",
-            icon: Icons.medical_services_outlined,
-            color: const Color(0xFF34495E),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => PrescriptionScreen(onSave: (record) {})),
-              );
-            },
+          const SizedBox(height: 16.0),
+          Card(
+            elevation: 4.0,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+            child: TableCalendar(
+              firstDay: DateTime.utc(2023, 1, 1),
+              lastDay: DateTime.utc(2030, 12, 31),
+              focusedDay: _focusedDay,
+              selectedDayPredicate: (day) => isSameDay(_selectedDay, day),
+              onDaySelected: _onDaySelected,
+              calendarFormat: CalendarFormat.month,
+              headerStyle: const HeaderStyle(
+                formatButtonVisible: false,
+                titleCentered: true,
+              ),
+              calendarStyle: const CalendarStyle(
+                todayDecoration: BoxDecoration(
+                  color: Colors.blueGrey,
+                  shape: BoxShape.circle,
+                ),
+                selectedDecoration: BoxDecoration(
+                  color: Colors.blue,
+                  shape: BoxShape.circle,
+                ),
+                markerDecoration: BoxDecoration(
+                  color: Colors.red,
+                  shape: BoxShape.circle,
+                ),
+              ),
+              eventLoader: (day) {
+                return [];
+              },
+            ),
           ),
-          _buildDashboardCard(
-            context: context,
-            title: "History & Records",
-            subtitle: "View all past prescriptions",
-            icon: Icons.folder_open,
-            color: const Color(0xFF95A5A6),
-            onTap: () {
-              Navigator.push(
-                context,
-                MaterialPageRoute(builder: (context) => const HistoryScreen(history: [])),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildDailyAppointmentsList() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Appointments for Selected Day',
+            style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
+          ),
+          const SizedBox(height: 16),
+          ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+            valueListenable: _selectedAppointments,
+            builder: (context, appointments, _) {
+              if (appointments.isEmpty) {
+                return const Center(child: Text('No appointments for this day.'));
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: appointments.length,
+                itemBuilder: (context, index) {
+                  final appointment = appointments[index];
+                  final data = appointment.data() as Map<String, dynamic>;
+                  return Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      title: Text(data['patientName']),
+                      subtitle: Text('Time: ${data['time']}'),
+                      trailing: PopupMenuButton<AppointmentStatus>(
+                        onSelected: (AppointmentStatus result) {
+                          _updateAppointmentStatus(appointment.id, result);
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<AppointmentStatus>>[
+                          const PopupMenuItem<AppointmentStatus>(
+                            value: AppointmentStatus.inProgress,
+                            child: Text('In Progress'),
+                          ),
+                          const PopupMenuItem<AppointmentStatus>(
+                            value: AppointmentStatus.completed,
+                            child: Text('Completed'),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PatientRecordScreen(
+                              patientId: data['patientId'],
+                              patientName: data['patientName'],
+                              doctorDetails: _doctorDetails,
+                              scrollController: null,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
               );
             },
           ),
@@ -407,193 +440,24 @@ class _DoctorHomeScreenState extends State<DoctorHomeScreen> with TickerProvider
     );
   }
 
-  Widget _buildDashboardCard({
-    required BuildContext context,
-    required String title,
-    required String subtitle,
-    required IconData icon,
-    required Color color,
-    String? route,
-    VoidCallback? onTap,
-  }) {
-    return Card(
-      elevation: 5,
-      margin: const EdgeInsets.only(bottom: 20),
-      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-      child: InkWell(
-        onTap: onTap ??
-                () {
-              if (route != null) {
-                Navigator.pushNamed(context, route);
-              }
-            },
-        child: Container(
-          height: 140,
-          decoration: BoxDecoration(
-            borderRadius: BorderRadius.circular(20),
-            gradient: LinearGradient(
-              colors: [
-                color.withOpacity(0.1),
-                color.withOpacity(0.05),
-              ],
-              begin: Alignment.topLeft,
-              end: Alignment.bottomRight,
-            ),
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  width: 60,
-                  height: 60,
-                  decoration: BoxDecoration(
-                    color: color,
-                    borderRadius: BorderRadius.circular(15),
-                    boxShadow: [
-                      BoxShadow(
-                        color: color.withOpacity(0.3),
-                        blurRadius: 10,
-                        offset: const Offset(0, 5),
-                      ),
-                    ],
-                  ),
-                  child: Icon(icon, color: Colors.white, size: 30),
-                ),
-                const SizedBox(width: 20),
-                Expanded(
-                  child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        title,
-                        style: TextStyle(
-                          fontSize: 20,
-                          fontWeight: FontWeight.bold,
-                          color: color,
-                        ),
-                      ),
-                      const SizedBox(height: 8),
-                      Text(
-                        subtitle,
-                        style: const TextStyle(
-                          fontSize: 16,
-                          color: Colors.black54,
-                          fontStyle: FontStyle.italic,
-                        ),
-                      ),
-                    ],
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildAppointmentsList(AppointmentStatus status) {
-    String statusString = status.toShortString();
-    return StreamBuilder<QuerySnapshot>(
-      stream: FirebaseFirestore.instance
+  Future<void> _updateAppointmentStatus(String docId, AppointmentStatus newStatus) async {
+    try {
+      await FirebaseFirestore.instance
           .collection('appointments')
-          .where('doctorId', isEqualTo: _currentDoctorId)
-          .where('status', isEqualTo: statusString)
-          .snapshots(),
-      builder: (context, snapshot) {
-        if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Center(child: CircularProgressIndicator());
-        }
-        if (snapshot.hasError) {
-          return const Center(child: Text('Error loading appointments.'));
-        }
-        if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-          return Center(
-            child: Text(
-              'No ${statusString.toLowerCase()} appointments.',
-              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
-            ),
-          );
-        }
-
-        final appointments = snapshot.data!.docs;
-        _queueCount = appointments.length;
-
-        // Sort appointments by date and time in ascending order
-        final sortedAppointments = _sortAppointments(appointments);
-
-        return ListView.builder(
-          shrinkWrap: true,
-          physics: const NeverScrollableScrollPhysics(),
-          itemCount: sortedAppointments.length,
-          itemBuilder: (context, index) {
-            final appointment = sortedAppointments[index];
-            final appointmentData = appointment.data() as Map<String, dynamic>;
-            final patientName = appointmentData['patientName'] ?? 'Unknown Patient';
-            final time = appointmentData['time'] ?? 'N/A';
-            final date = (appointmentData['date'] as Timestamp).toDate();
-
-            return Card(
-              margin: const EdgeInsets.symmetric(vertical: 8),
-              elevation: 2,
-              child: ListTile(
-                leading: CircleAvatar(
-                  backgroundColor: const Color(0xFF3498DB),
-                  child: Text(
-                    '${index + 1}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
-                  ),
-                ),
-                title: Text(
-                  patientName,
-                  style: const TextStyle(fontWeight: FontWeight.bold),
-                ),
-                subtitle: Text('Time: $time | Date: ${date.day}/${date.month}/${date.year}'),
-                trailing: const Icon(Icons.arrow_forward_ios, size: 16),
-                onTap: () {
-                  // TODO: Navigate to patient profile or start chat
-                  // The logic to change appointment status would go here
-                },
-              ),
-            );
-          },
-        );
-      },
-    );
-  }
-
-  List<QueryDocumentSnapshot> _sortAppointments(List<QueryDocumentSnapshot> appointments) {
-    appointments.sort((a, b) {
-      final aData = a.data() as Map<String, dynamic>;
-      final bData = b.data() as Map<String, dynamic>;
-      final aDate = (aData['date'] as Timestamp).toDate();
-      final bDate = (bData['date'] as Timestamp).toDate();
-      final aTime = aData['time'] as String;
-      final bTime = bData['time'] as String;
-
-      int dateComparison = aDate.compareTo(bDate);
-      if (dateComparison != 0) {
-        return dateComparison;
-      }
-      return _parseTime(aTime).compareTo(_parseTime(bTime));
-    });
-    return appointments;
-  }
-
-  DateTime _parseTime(String time) {
-    final parts = time.split(':');
-    final hour = int.parse(parts[0]);
-    final minute = int.parse(parts[1].split(' ')[0]);
-    final period = parts[1].split(' ')[1];
-    int finalHour = hour;
-    if (period == 'PM' && hour != 12) {
-      finalHour += 12;
-    } else if (period == 'AM' && hour == 12) {
-      finalHour = 0;
+          .doc(docId)
+          .update({'status': newStatus.toShortString()});
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Appointment status updated to ${newStatus.toShortString()}')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to update status.')),
+      );
     }
-    return DateTime(1, 1, 1, finalHour, minute);
   }
+}
+
+bool isSameDay(DateTime? a, DateTime? b) {
+  if (a == null || b == null) return false;
+  return a.year == b.year && a.month == b.month && a.day == b.day;
 }

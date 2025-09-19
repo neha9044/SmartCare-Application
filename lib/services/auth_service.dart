@@ -1,3 +1,4 @@
+// lib/services/auth_service.dart
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smartcare_app/utils/appointment_status.dart';
@@ -77,7 +78,6 @@ class AuthService {
         throw Exception('Invalid user type');
       }
 
-      // Remove null values before saving
       userData.removeWhere((key, value) => value == null);
 
       await _firestore.collection(collectionPath).doc(userId).set(userData);
@@ -142,14 +142,16 @@ class AuthService {
     }
   }
 
-  /// Fetch patient data
-  Future<DocumentSnapshot> getPatientData(String patientId) async {
-    return _firestore.collection('patients').doc(patientId).get();
+  /// Fetch patient data and return it as a map
+  Future<Map<String, dynamic>> getPatientData(String patientId) async {
+    final doc = await _firestore.collection('patients').doc(patientId).get();
+    return doc.data() ?? {};
   }
 
-  /// Fetch doctor data
-  Future<DocumentSnapshot> getDoctorData(String doctorId) async {
-    return _firestore.collection('doctors').doc(doctorId).get();
+  /// Fetch doctor data and return it as a map
+  Future<Map<String, dynamic>> getDoctorData(String doctorId) async {
+    final doc = await _firestore.collection('doctors').doc(doctorId).get();
+    return doc.data() ?? {};
   }
 
   /// Save a new appointment
@@ -159,6 +161,7 @@ class AuthService {
     required String patientName,
     required DateTime date,
     required String time,
+    required String status,
   }) async {
     await _firestore.collection('appointments').add({
       'doctorId': doctorId,
@@ -166,7 +169,7 @@ class AuthService {
       'patientName': patientName,
       'date': Timestamp.fromDate(date),
       'time': time,
-      'status': AppointmentStatus.pending.toShortString(),
+      'status': status,
       'createdAt': FieldValue.serverTimestamp(),
     });
   }
