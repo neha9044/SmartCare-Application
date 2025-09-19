@@ -1,8 +1,10 @@
+// lib/screens/patient/doctor_profile_screen.dart
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/widgets/info_section.dart';
 import 'book_appointment_screen.dart';
+import 'chat_screen.dart'; // Import the new chat screen
 
 class DoctorProfileScreen extends StatelessWidget {
   final Doctor doctor;
@@ -155,7 +157,28 @@ class DoctorProfileScreen extends StatelessWidget {
             const SizedBox(height: 20),
             SizedBox(
               width: double.infinity,
-              child: ElevatedButton(
+              child: ElevatedButton.icon(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder: (context) => PatientChatScreen(doctor: doctor),
+                    ),
+                  );
+                },
+                icon: const Icon(Icons.chat_bubble_outline_rounded),
+                label: const Text('Chat with Doctor'),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  textStyle: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
                 onPressed: doctor.isAvailableToday ? () {
                   Navigator.push(
                     context,
@@ -164,7 +187,8 @@ class DoctorProfileScreen extends StatelessWidget {
                     ),
                   );
                 } : null,
-                child: Text(doctor.isAvailableToday ? 'Book Appointment' : 'Not Available Today'),
+                icon: const Icon(Icons.calendar_today_rounded),
+                label: Text(doctor.isAvailableToday ? 'Book Appointment' : 'Not Available Today'),
                 style: ElevatedButton.styleFrom(
                   backgroundColor: AppColors.primaryColor,
                   padding: const EdgeInsets.symmetric(vertical: 16),

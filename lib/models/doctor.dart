@@ -13,6 +13,8 @@ class Doctor {
   final bool isAvailableToday;
   final String about;
   final List<String> qualifications;
+  final double? latitude;
+  final double? longitude;
 
   Doctor({
     required this.id,
@@ -29,5 +31,7 @@ class Doctor {
     required this.isAvailableToday,
     required this.about,
     required this.qualifications,
+    this.latitude,
+    this.longitude,
   });
 }

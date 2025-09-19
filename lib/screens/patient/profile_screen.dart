@@ -1,10 +1,31 @@
-import 'package:flutter/material.dart';
+// lib/screens/patient/profile_screen.dart
 
-class ProfileScreen extends StatelessWidget {
+import 'package:flutter/material.dart';
+import 'package:smartcare_app/services/auth_service.dart';
+
+class ProfileScreen extends StatefulWidget {
   const ProfileScreen({Key? key}) : super(key: key);
 
+  @override
+  _ProfileScreenState createState() => _ProfileScreenState();
+}
+
+class _ProfileScreenState extends State<ProfileScreen> {
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color backgroundColor = const Color(0xFFF5F7FA);
+
+  final AuthService _authService = AuthService();
+
+  Future<void> _handleLogout() async {
+    try {
+      await _authService.signOut();
+      Navigator.pushReplacementNamed(context, '/login');
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to log out. Please try again.'), backgroundColor: Colors.red),
+      );
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -74,6 +95,7 @@ class ProfileScreen extends StatelessWidget {
                     title: 'Location',
                     subtitle: 'Andheri West, Mumbai',
                   ),
+                  _buildLogoutCard(),
                 ],
               ),
             ),
@@ -118,6 +140,40 @@ class ProfileScreen extends StatelessWidget {
             ],
           ),
         ],
+      ),
+    );
+  }
+
+  Widget _buildLogoutCard() {
+    return GestureDetector(
+      onTap: _handleLogout,
+      child: Container(
+        margin: const EdgeInsets.symmetric(vertical: 6),
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(color: Colors.red.withOpacity(0.3)),
+        ),
+        child: Row(
+          children: [
+            const Icon(Icons.logout, color: Colors.red, size: 20),
+            const SizedBox(width: 12),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Log Out',
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.bold,
+                    color: Colors.red[600],
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }

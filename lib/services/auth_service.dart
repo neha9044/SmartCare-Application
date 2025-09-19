@@ -24,6 +24,8 @@ class AuthService {
     String? clinicName,
     String? clinicLocation,
     double? consultationFees,
+    double? latitude,
+    double? longitude,
   }) async {
     try {
       final authResult = await _auth.createUserWithEmailAndPassword(
@@ -61,6 +63,8 @@ class AuthService {
           'clinicName': clinicName,
           'clinicLocation': clinicLocation,
           'consultationFees': consultationFees,
+          'latitude': latitude,
+          'longitude': longitude,
           'created_at': FieldValue.serverTimestamp(),
         };
       } else if (userType == 'Pharmacy') {

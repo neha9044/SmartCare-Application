@@ -9,6 +9,7 @@ import 'package:smartcare_app/utils/appointment_status.dart';
 import 'package:table_calendar/table_calendar.dart';
 import 'package:smartcare_app/screens/doctor/patient_record_screen.dart';
 import 'package:smartcare_app/screens/doctor/DoctorProfileScreen.dart';
+import 'package:smartcare_app/screens/doctor/chat_inbox_screen.dart'; // Import the chat inbox
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({Key? key}) : super(key: key);
@@ -42,6 +43,7 @@ class _DoctorDashboardState extends State<DoctorDashboard>
   void initState() {
     super.initState();
     _currentDoctorId = _authService.currentUser?.uid;
+    print('Current Logged-in User ID: $_currentDoctorId');
     _setupAnimations();
     _fetchDoctorData();
     _selectedDay = _focusedDay;
@@ -152,6 +154,8 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                       children: [
                         const SizedBox(height: 24),
                         _buildQueueManagementCard(),
+                        const SizedBox(height: 16),
+                        _buildChatInboxCard(), // Added Chat Inbox card
                         const SizedBox(height: 24),
                         _buildCalendarView(),
                         const SizedBox(height: 24),
@@ -302,6 +306,77 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                   const Expanded(
                     child: Text(
                       "Queue Management",
+                      style: TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.bold,
+                        color: Color(0xFF3498DB),
+                      ),
+                    ),
+                  ),
+                  const Icon(
+                    Icons.arrow_forward_ios,
+                    color: Color(0xFF3498DB),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildChatInboxCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Card(
+        elevation: 5,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => const ChatInboxScreen(),
+              ),
+            );
+          },
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF3498DB).withOpacity(0.1),
+                  const Color(0xFF3498DB).withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF3498DB),
+                      borderRadius: BorderRadius.circular(15),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF3498DB).withOpacity(0.3),
+                          blurRadius: 10,
+                          offset: const Offset(0, 5),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 30),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Text(
+                      "Chat Inbox",
                       style: TextStyle(
                         fontSize: 20,
                         fontWeight: FontWeight.bold,

@@ -8,6 +8,9 @@ import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/screens/patient/doctor_profile_screen.dart';
 import 'package:smartcare_app/screens/patient/profile_screen.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:smartcare_app/services/location_service.dart';
 import 'book_appointment_screen.dart';
 import 'more_specialties_screen.dart';
 
@@ -35,10 +38,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   bool _isLoading = true;
 
   String? _selectedLocation;
-  String? _selectedSpecialization;
+  String _selectedSpecialization = 'All';
   List<String> _locations = ['All'];
   List<String> _specializations = ['All'];
   Map<String, int> _specializationCounts = {};
+
+  String _currentLocation = 'Fetching location...';
+  Position? _currentPosition;
+  final LocationService _locationService = LocationService();
 
   // Animation controllers
   late AnimationController _fadeController;
@@ -191,6 +198,58 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     _listenToDoctorUpdates();
   }
 
+  Future<void> _fetchAndSetData() async {
+    setState(() => _isLoading = true);
+    await _fetchPatientName();
+    await _fetchLocation(); // Wait for location to be fetched first
+    await _fetchAndSetDoctors();
+    _filterDoctors(); // Then filter and sort after all data is ready
+    setState(() => _isLoading = false);
+  }
+
+  Future<void> _fetchLocation() async {
+    try {
+      final hasPermission = await _locationService.handleLocationPermission();
+      if (!hasPermission) {
+        setState(() {
+          _currentLocation = 'Permission Denied';
+          _currentPosition = null; // Set position to null if permission is denied
+        });
+        return;
+      }
+
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+
+      _currentPosition = position;
+
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        String? locality = place.locality;
+        String? administrativeArea = place.administrativeArea;
+
+        setState(() {
+          _currentLocation = '${locality ?? ''}';
+        });
+      } else {
+        setState(() {
+          _currentLocation = 'Location not found';
+        });
+      }
+    } catch (e) {
+      print('Error fetching location: $e');
+      setState(() {
+        _currentLocation = 'Location error';
+        _currentPosition = null; // Set position to null on error
+      });
+    }
+  }
   void _setupAnimations() {
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1000),
@@ -222,15 +281,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         .listen((snapshot) {
       if (mounted) {
         _processDoctorData(snapshot.docs);
+        _filterDoctors();
       }
     });
-  }
-
-  Future<void> _fetchAndSetData() async {
-    setState(() => _isLoading = true);
-    await _fetchPatientName();
-    await _fetchAndSetDoctors();
-    setState(() => _isLoading = false);
   }
 
   Future<void> _fetchPatientName() async {
@@ -305,6 +358,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             .map((q) => q.trim())
             .toList() ??
             ['MBBS'],
+        latitude: (data['latitude'] as num?)?.toDouble(),
+        longitude: (data['longitude'] as num?)?.toDouble(),
       );
 
       fetchedDoctors.add(doctor);
@@ -326,31 +381,69 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       _specializations = sortedSpecializations;
       _locations = uniqueLocations.toList();
       _specializationCounts = specializationCounts;
-
-      if (!_specializations.contains(_selectedSpecialization)) {
-        _selectedSpecialization = _specializations.first;
-      }
       if (!_locations.contains(_selectedLocation)) {
         _selectedLocation = _locations.first;
       }
     });
-
-    _filterDoctors();
   }
 
   void _filterDoctors() {
     setState(() {
-      _filteredDoctors = _allDoctors.where((doctor) {
-        bool matchesSearch = doctor.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
+      final List<Doctor> tempFilteredList = _allDoctors.where((doctor) {
+        bool matchesSearch = _searchController.text.isEmpty ||
+            doctor.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
             doctor.specialization.toLowerCase().contains(_searchController.text.toLowerCase()) ||
             doctor.hospital.toLowerCase().contains(_searchController.text.toLowerCase());
-
         bool matchesSpecialization = _selectedSpecialization == 'All' || doctor.specialization == _selectedSpecialization;
-
         bool matchesLocation = _selectedLocation == 'All' || doctor.location == _selectedLocation;
-
         return matchesSearch && matchesSpecialization && matchesLocation;
       }).toList();
+
+      final List<Doctor> sameCityDoctors = [];
+      final List<Doctor> nearbyCityDoctors = [];
+      final List<Doctor> otherDoctors = [];
+
+      final patientCity = _currentLocation.toLowerCase();
+
+      for (var doctor in tempFilteredList) {
+        if (doctor.location.toLowerCase() == patientCity) {
+          sameCityDoctors.add(doctor);
+        } else if (_currentPosition != null && doctor.latitude != null && doctor.longitude != null) {
+          final distanceInMeters = Geolocator.distanceBetween(
+            _currentPosition!.latitude,
+            _currentPosition!.longitude,
+            doctor.latitude!,
+            doctor.longitude!,
+          );
+          if (distanceInMeters <= 50000) { // 50 km radius
+            nearbyCityDoctors.add(doctor);
+          } else {
+            otherDoctors.add(doctor);
+          }
+        } else {
+          otherDoctors.add(doctor);
+        }
+      }
+
+      // Sort nearby doctors by distance
+      nearbyCityDoctors.sort((a, b) {
+        final distanceA = Geolocator.distanceBetween(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          a.latitude!,
+          a.longitude!,
+        );
+        final distanceB = Geolocator.distanceBetween(
+          _currentPosition!.latitude,
+          _currentPosition!.longitude,
+          b.latitude!,
+          b.longitude!,
+        );
+        return distanceA.compareTo(distanceB);
+      });
+
+      // Combine the lists in the desired order
+      _filteredDoctors = [...sameCityDoctors, ...nearbyCityDoctors, ...otherDoctors];
     });
   }
 
@@ -557,7 +650,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
               Row(
                 children: [
                   Text(
-                    'Mumbai, India',
+                    _currentLocation,
                     style: TextStyle(
                       fontSize: 14,
                       color: darkBlue,

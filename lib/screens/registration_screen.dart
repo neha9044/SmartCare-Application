@@ -2,6 +2,9 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smartcare_app/services/auth_service.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:geocoding_platform_interface/geocoding_platform_interface.dart';
+
 
 class RegistrationScreen extends StatefulWidget {
   @override
@@ -508,6 +511,23 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
 
     try {
       final authService = AuthService();
+      double? clinicLatitude;
+      double? clinicLongitude;
+
+      if (selectedUserType == 'Doctor') {
+        try {
+          List<Location> locations = await GeocodingPlatform.instance?.locationFromAddress(
+            _clinicLocationController.text.trim(),
+          ) ?? [];
+          if (locations.isNotEmpty) {
+            clinicLatitude = locations.first.latitude;
+            clinicLongitude = locations.first.longitude;
+          }
+        } catch (e) {
+          print('Error converting address to coordinates: $e');
+        }
+      }
+
       await authService.registerUserWithFirestore(
         email: _emailController.text.trim(),
         password: _passwordController.text.trim(),
@@ -524,6 +544,8 @@ class _RegistrationScreenState extends State<RegistrationScreen> {
         clinicName: selectedUserType == 'Doctor' ? _clinicNameController.text.trim() : null,
         clinicLocation: selectedUserType == 'Doctor' ? _clinicLocationController.text.trim() : null,
         consultationFees: selectedUserType == 'Doctor' ? double.tryParse(_consultationFeesController.text.trim()) : null,
+        latitude: clinicLatitude,
+        longitude: clinicLongitude,
       );
 
       // Show success message and navigate
