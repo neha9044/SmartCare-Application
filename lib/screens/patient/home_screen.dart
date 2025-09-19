@@ -890,21 +890,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Widget _buildMoreCard() {
     return GestureDetector(
-      onTap: () async {
-        final result = await Navigator.push(
+      onTap: () {
+        Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (_) => MoreSpecialtiesScreen(
+            builder: (context) => MoreSpecialtiesScreen(
               specialtyConfig: _specialtyConfig,
-              specializationCounts: _specializationCounts,
               specializations: _specializations,
             ),
           ),
         );
-
-        if (result != null && result is String) {
-          _onSpecialtyTapped(result);
-        }
       },
       child: Container(
         decoration: BoxDecoration(

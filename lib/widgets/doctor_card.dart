@@ -1,3 +1,4 @@
+// lib/widgets/doctor_card.dart
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
@@ -25,8 +26,8 @@ class DoctorCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-        margin: const EdgeInsets.only(bottom: 16),
-        padding: const EdgeInsets.all(16),
+        margin: const EdgeInsets.only(bottom: 12),
+        padding: const EdgeInsets.all(12),
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
@@ -40,20 +41,21 @@ class DoctorCard extends StatelessWidget {
           ],
         ),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             CircleAvatar(
-              radius: 30,
+              radius: 20,
               backgroundColor: AppColors.primaryColor,
               child: Text(
                 initials.toUpperCase(),
                 style: const TextStyle(
                   color: Colors.white,
                   fontWeight: FontWeight.bold,
+                  fontSize: 14,
                 ),
               ),
             ),
-            const SizedBox(width: 16),
+            const SizedBox(width: 12),
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -61,7 +63,7 @@ class DoctorCard extends StatelessWidget {
                   Text(
                     doctor.name,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: 14,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
@@ -69,35 +71,35 @@ class DoctorCard extends StatelessWidget {
                     doctor.specialization,
                     style: const TextStyle(
                       color: AppColors.primaryColor,
-                      fontSize: 14,
+                      fontSize: 11,
                       fontWeight: FontWeight.w600,
                     ),
                   ),
                   Row(
                     children: [
-                      const Icon(Icons.star, size: 16, color: AppColors.orange),
+                      const Icon(Icons.star, size: 12, color: AppColors.orange),
                       const SizedBox(width: 4),
                       Text(
                         '${doctor.rating}',
-                        style: const TextStyle(fontWeight: FontWeight.w600),
+                        style: const TextStyle(fontWeight: FontWeight.w600, fontSize: 10),
                       ),
                       Text(
                         ' (${doctor.reviewCount} reviews)',
-                        style: TextStyle(color: AppColors.darkGrey, fontSize: 12),
+                        style: TextStyle(color: AppColors.darkGrey, fontSize: 8),
                       ),
                     ],
                   ),
                   const SizedBox(height: 4),
                   Row(
                     children: [
-                      const Icon(Icons.location_on, size: 12, color: AppColors.darkGrey),
+                      const Icon(Icons.location_on, size: 8, color: AppColors.darkGrey),
                       const SizedBox(width: 4),
                       Expanded(
                         child: Text(
                           doctor.location,
                           style: TextStyle(
                             color: AppColors.darkGrey,
-                            fontSize: 12,
+                            fontSize: 8,
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -112,6 +114,10 @@ class DoctorCard extends StatelessWidget {
                 padding: const EdgeInsets.only(left: 8.0),
                 child: ElevatedButton(
                   onPressed: onTap,
+                  style: ElevatedButton.styleFrom(
+                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 6),
+                    textStyle: const TextStyle(fontSize: 8),
+                  ),
                   child: const Text('Book Now'),
                 ),
               ),

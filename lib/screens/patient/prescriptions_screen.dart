@@ -1,3 +1,4 @@
+// lib/screens/patient/prescriptions_screen.dart
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/constants/colors.dart';
 
@@ -62,11 +63,11 @@ class PrescriptionsScreen extends StatelessWidget {
               contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               leading: Icon(Icons.medical_services_outlined, color: primaryBlue),
               title: Text(
-                prescription['medication']!,
+                prescription['doctor']!,
                 style: TextStyle(fontWeight: FontWeight.bold),
               ),
               subtitle: Text(
-                'By ${prescription['doctor']!} on ${prescription['date']!}\nNotes: ${prescription['notes']!}',
+                '${prescription['medication']!}\nDate: ${prescription['date']!}\nNotes: ${prescription['notes']!}',
               ),
             ),
           );
