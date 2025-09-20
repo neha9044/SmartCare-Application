@@ -161,6 +161,8 @@ class AuthService {
   /// Save a new appointment
   Future<void> saveAppointment({
     required String doctorId,
+    required String doctorName,
+    required String doctorSpecialty,
     required String patientId,
     required String patientName,
     required DateTime date,
@@ -169,12 +171,15 @@ class AuthService {
   }) async {
     await _firestore.collection('appointments').add({
       'doctorId': doctorId,
+      'doctorName': doctorName,
+      'doctorSpecialty': doctorSpecialty,
       'patientId': patientId,
       'patientName': patientName,
       'date': Timestamp.fromDate(date),
       'time': time,
       'status': status,
       'createdAt': FieldValue.serverTimestamp(),
+      'rated': false, // ADD THIS LINE
     });
   }
 }

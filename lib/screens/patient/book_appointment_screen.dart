@@ -504,11 +504,6 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    const Text(
-                      'Details:',
-                      style: TextStyle(fontWeight: FontWeight.bold, fontSize: 13),
-                    ),
-                    const SizedBox(height: 6),
                     Text('Dr. ${widget.doctor.name}', style: const TextStyle(fontSize: 12)),
                     Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}', style: const TextStyle(fontSize: 12)),
                     Text('$_selectedTimeSlot', style: const TextStyle(fontSize: 12)),
@@ -551,6 +546,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
       await _authService.saveAppointment(
         doctorId: widget.doctor.id,
+        doctorName: widget.doctor.name,
+        doctorSpecialty: widget.doctor.specialization,
         patientId: patientId,
         patientName: patientName,
         date: _selectedDate,

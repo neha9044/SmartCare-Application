@@ -1,3 +1,5 @@
+// lib/screens/patient/patient_dashboard.dart
+
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/constants/colors.dart';
 import 'home_screen.dart';
@@ -5,6 +7,13 @@ import 'package:flutter/services.dart';
 import 'appointments_screen.dart';
 import 'prescriptions_screen.dart';
 import 'reminders_screen.dart';
+import 'notifications_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:smartcare_app/utils/appointment_status.dart';
+
+// Import the new dialog widget
+import 'package:smartcare_app/screens/patient/rate_doctor_dialog.dart';
 
 class PatientDashboard extends StatefulWidget {
   const PatientDashboard({Key? key}) : super(key: key);
@@ -18,6 +27,8 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
 
+  final User? currentUser = FirebaseAuth.instance.currentUser;
+
   // Healthcare theme colors
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color lightBlue = const Color(0xFFE3F2FD);
@@ -30,6 +41,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
     const AppointmentsScreen(),
     const PrescriptionsScreen(),
     const RemindersScreen(),
+    const NotificationsScreen(),
   ];
 
   // Navigation items with enhanced styling
@@ -55,8 +67,14 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
     {
       'icon': Icons.notifications_rounded,
       'activeIcon': Icons.notifications,
-      'label': 'Reminders',
+      'label': 'Notifications',
       'color': Color(0xFFE91E63),
+    },
+    {
+      'icon': Icons.access_alarms,
+      'activeIcon': Icons.access_alarms,
+      'label': 'Reminders',
+      'color': Color(0xFF9C27B0),
     },
   ];
 
@@ -75,6 +93,43 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
       curve: Curves.elasticOut,
     ));
     _animationController.forward();
+
+    // Check for completed appointments when the dashboard loads
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _checkForCompletedAppointments();
+    });
+  }
+
+  // New method to check and show the rating dialog
+  void _checkForCompletedAppointments() async {
+    if (currentUser == null) return;
+
+    final querySnapshot = await FirebaseFirestore.instance
+        .collection('appointments')
+        .where('patientId', isEqualTo: currentUser!.uid)
+        .where('status', isEqualTo: AppointmentStatus.completed.toShortString())
+        .where('rated', isEqualTo: false) // Check for unrated appointments
+        .limit(1)
+        .get();
+
+    if (querySnapshot.docs.isNotEmpty) {
+      final appointmentDoc = querySnapshot.docs.first;
+      final appointmentData = appointmentDoc.data() as Map<String, dynamic>;
+
+      if (!mounted) return;
+
+      showDialog(
+        context: context,
+        barrierDismissible: false,
+        builder: (BuildContext context) {
+          return RateDoctorDialog(
+            appointmentId: appointmentDoc.id,
+            doctorId: appointmentData['doctorId'] as String,
+            doctorName: appointmentData['doctorName'] as String,
+          );
+        },
+      );
+    }
   }
 
   @override
@@ -102,10 +157,9 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: backgroundColor,
-      extendBody: true, // Allows body to extend behind the bottom navigation
+      extendBody: true,
       body: Stack(
         children: [
-          // Background gradient
           Container(
             decoration: BoxDecoration(
               gradient: LinearGradient(
@@ -118,7 +172,6 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
               ),
             ),
           ),
-          // Main content
           _screens[_selectedIndex],
         ],
       ),
@@ -148,7 +201,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
         child: ClipRRect(
           borderRadius: BorderRadius.circular(25),
           child: Container(
-            height: 75,
+            height: 60,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(25),
@@ -179,19 +232,18 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
       child: GestureDetector(
         onTap: () => _onItemTapped(index),
         child: Container(
-          height: 75,
+          height: 60,
           child: AnimatedContainer(
             duration: const Duration(milliseconds: 300),
             curve: Curves.easeInOut,
             child: Column(
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
-                // Icon with animated container
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   curve: Curves.easeInOut,
-                  width: isSelected ? 50 : 40,
-                  height: isSelected ? 35 : 30,
+                  width: isSelected ? 45 : 35,
+                  height: isSelected ? 30 : 25,
                   decoration: BoxDecoration(
                     color: isSelected
                         ? itemColor.withOpacity(0.15)
@@ -203,28 +255,11 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
                     const AlwaysStoppedAnimation(1.0),
                     child: Icon(
                       isSelected ? item['activeIcon'] : item['icon'],
-                      size: isSelected ? 26 : 22,
+                      size: isSelected ? 24 : 20,
                       color: isSelected ? itemColor : Colors.grey[600],
                     ),
                   ),
                 ),
-                const SizedBox(height: 4),
-                // Label with animation
-                AnimatedDefaultTextStyle(
-                  duration: const Duration(milliseconds: 300),
-                  style: TextStyle(
-                    fontSize: isSelected ? 11 : 10,
-                    fontWeight: isSelected ? FontWeight.w700 : FontWeight.w500,
-                    color: isSelected ? itemColor : Colors.grey[600],
-                    letterSpacing: 0.3,
-                  ),
-                  child: Text(
-                    item['label'],
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ),
-                // Active indicator dot
                 AnimatedContainer(
                   duration: const Duration(milliseconds: 300),
                   margin: const EdgeInsets.only(top: 2),

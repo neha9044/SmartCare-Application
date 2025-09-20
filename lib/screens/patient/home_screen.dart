@@ -14,6 +14,12 @@ import 'package:smartcare_app/services/location_service.dart';
 import 'book_appointment_screen.dart';
 import 'more_specialties_screen.dart';
 
+// Placeholder for AppColors with a red color constant
+class AppColors {
+  static const Color primaryColor = Color(0xFF2196F3);
+  static const Color redColor = Color(0xFFE57373); // New red color for location icon
+}
+
 class HomeScreen extends StatefulWidget {
   const HomeScreen({Key? key}) : super(key: key);
 
@@ -59,132 +65,131 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   final Color darkBlue = const Color(0xFF1976D2);
   final Color backgroundColor = const Color(0xFFF5F7FA);
 
-  // Comprehensive specialty configuration with healthcare colors and icons
   final Map<String, Map<String, dynamic>> _specialtyConfig = {
-    'Cardiologist': {
+    'cardiologist': {
       'icon': Icons.favorite,
-      'color': const Color(0xFFE57373),
-      'lightColor': const Color(0xFFFFEBEE),
+      'color': const Color(0xFFAD1457), // Dark pink for icon
+      'lightColor': const Color(0xFFFCE4EC), // Light pink background
     },
     'Pediatrician': {
-      'icon': Icons.child_care,
-      'color': const Color(0xFF64B5F6),
-      'lightColor': const Color(0xFFE3F2FD),
+      'icon': Icons.child_friendly,
+      'color': const Color(0xFF00838F), // Dark cyan for icon
+      'lightColor': const Color(0xFFE0F7FA), // Light cyan background
     },
-    'Dermatologist': {
-      'icon': Icons.face,
-      'color': const Color(0xFFBA68C8),
-      'lightColor': const Color(0xFFF3E5F5),
+    'Skincare': {
+      'icon': Icons.face_retouching_natural,
+      'color': const Color(0xFF7B1FA2), // Dark purple for icon
+      'lightColor': const Color(0xFFF3E5F5), // Light purple background
     },
     'Neurologist': {
       'icon': Icons.psychology,
-      'color': const Color(0xFF4DB6AC),
-      'lightColor': const Color(0xFFE0F2F1),
+      'color': const Color(0xFF00695C), // Dark teal for icon
+      'lightColor': const Color(0xFFE0F2F1), // Light teal background
     },
     'Orthopedist': {
-      'icon': Icons.accessibility_new,
-      'color': const Color(0xFFFFB74D),
-      'lightColor': const Color(0xFFFFF3E0),
+      'icon': Icons.accessible_forward,
+      'color': const Color(0xFFEF6C00), // Dark orange for icon
+      'lightColor': const Color(0xFFFFF3E0), // Light orange background
     },
-    'Dentist': {
-      'icon': Icons.medical_services,
-      'color': const Color(0xFF81C784),
-      'lightColor': const Color(0xFFE8F5E8),
+    'dentist': {
+      'icon': Icons.sentiment_satisfied_alt,
+      'color': const Color(0xFF2E7D32), // Dark green for icon
+      'lightColor': const Color(0xFFE8F5E8), // Light green background
     },
     'Gynecologist': {
-      'icon': Icons.female,
-      'color': const Color(0xFFF06292),
-      'lightColor': const Color(0xFFFCE4EC),
+      'icon': Icons.pregnant_woman,
+      'color': const Color(0xFFC2185B), // Dark pink for icon
+      'lightColor': const Color(0xFFFCE4EC), // Light pink background
     },
     'Psychiatrist': {
-      'icon': Icons.psychology_alt,
-      'color': const Color(0xFF9575CD),
-      'lightColor': const Color(0xFFEDE7F6),
+      'icon': Icons.self_improvement,
+      'color': const Color(0xFF512DA8), // Dark deep purple for icon
+      'lightColor': const Color(0xFFEDE7F6), // Light deep purple background
     },
     'Ophthalmologist': {
-      'icon': Icons.visibility,
-      'color': const Color(0xFF4FC3F7),
-      'lightColor': const Color(0xFFE1F5FE),
+      'icon': Icons.remove_red_eye,
+      'color': const Color(0xFF1565C0), // Dark blue for icon
+      'lightColor': const Color(0xFFE3F2FD), // Light blue background
     },
     'General Physician': {
-      'icon': Icons.local_hospital,
-      'color': const Color(0xFF66BB6A),
-      'lightColor': const Color(0xFFE8F5E8),
+      'icon': Icons.medical_services,
+      'color': const Color(0xFF388E3C), // Dark green for icon
+      'lightColor': const Color(0xFFE8F5E8), // Light green background
     },
     'Endocrinologist': {
       'icon': Icons.science,
-      'color': const Color(0xFF7CB342),
-      'lightColor': const Color(0xFFF1F8E9),
+      'color': const Color(0xFF689F38), // Dark light green for icon
+      'lightColor': const Color(0xFFF1F8E9), // Light green background
     },
     'Urologist': {
-      'icon': Icons.medical_information,
-      'color': const Color(0xFF673AB7),
-      'lightColor': const Color(0xFFEDE7F6),
+      'icon': Icons.water_drop,
+      'color': const Color(0xFF303F9F), // Dark indigo for icon
+      'lightColor': const Color(0xFFE8EAF6), // Light indigo background
     },
     'Gastroenterologist': {
-      'icon': Icons.healing,
-      'color': const Color(0xFFFF8A65),
-      'lightColor': const Color(0xFFFFF3E0),
+      'icon': Icons.restaurant,
+      'color': const Color(0xFFD84315), // Dark deep orange for icon
+      'lightColor': const Color(0xFFFBE9E7), // Light deep orange background
     },
     'Oncologist': {
-      'icon': Icons.biotech,
-      'color': const Color(0xFFAD1457),
-      'lightColor': const Color(0xFFFCE4EC),
+      'icon': Icons.healing,
+      'color': const Color(0xFF5D4037), // Dark brown for icon
+      'lightColor': const Color(0xFFEFEBE9), // Light brown background
     },
     'Rheumatologist': {
-      'icon': Icons.accessibility,
-      'color': const Color(0xFF8D6E63),
-      'lightColor': const Color(0xFFEFEBE9),
+      'icon': Icons.pan_tool,
+      'color': const Color(0xFF455A64), // Dark blue grey for icon
+      'lightColor': const Color(0xFFECEFF1), // Light blue grey background
     },
     'Pulmonologist': {
       'icon': Icons.air,
-      'color': const Color(0xFF26C6DA),
-      'lightColor': const Color(0xFFE0F7FA),
+      'color': const Color(0xFF0097A7), // Dark cyan for icon
+      'lightColor': const Color(0xFFE0F7FA), // Light cyan background
     },
     'Nephrologist': {
-      'icon': Icons.water_drop,
-      'color': const Color(0xFF42A5F5),
-      'lightColor': const Color(0xFFE3F2FD),
+      'icon': Icons.opacity,
+      'color': const Color(0xFF1976D2), // Dark blue for icon
+      'lightColor': const Color(0xFFE3F2FD), // Light blue background
     },
     'Radiologist': {
-      'icon': Icons.radio_button_checked,
-      'color': const Color(0xFF8E24AA),
-      'lightColor': const Color(0xFFF3E5F5),
+      'icon': Icons.radar,
+      'color': const Color(0xFF8E24AA), // Dark purple for icon
+      'lightColor': const Color(0xFFF3E5F5), // Light purple background
     },
     'Anesthesiologist': {
-      'icon': Icons.local_hospital,
-      'color': const Color(0xFF5C6BC0),
-      'lightColor': const Color(0xFFE8EAF6),
+      'icon': Icons.masks,
+      'color': const Color(0xFF3949AB), // Dark indigo for icon
+      'lightColor': const Color(0xFFE8EAF6), // Light indigo background
     },
     'Pathologist': {
       'icon': Icons.biotech,
-      'color': const Color(0xFF26A69A),
-      'lightColor': const Color(0xFFE0F2F1),
+      'color': const Color(0xFF00796B), // Dark teal for icon
+      'lightColor': const Color(0xFFE0F2F1), // Light teal background
     },
     'Surgeon': {
       'icon': Icons.content_cut,
-      'color': const Color(0xFFEF5350),
-      'lightColor': const Color(0xFFFFEBEE),
+      'color': const Color(0xFFD32F2F), // Dark red for icon
+      'lightColor': const Color(0xFFFFEBEE), // Light red background
     },
     'ENT Specialist': {
       'icon': Icons.hearing,
-      'color': const Color(0xFFAB47BC),
-      'lightColor': const Color(0xFFF3E5F5),
+      'color': const Color(0xFF7B1FA2), // Dark purple for icon
+      'lightColor': const Color(0xFFF3E5F5), // Light purple background
     },
     'Allergist': {
-      'icon': Icons.local_florist,
-      'color': const Color(0xFF66BB6A),
-      'lightColor': const Color(0xFFE8F5E8),
+      'icon': Icons.eco,
+      'color': const Color(0xFF689F38), // Dark light green for icon
+      'lightColor': const Color(0xFFF1F8E9), // Light green background
     },
     'Hematologist': {
-      'icon': Icons.opacity,
-      'color': const Color(0xFFEC407A),
-      'lightColor': const Color(0xFFFCE4EC),
+      'icon': Icons.bloodtype,
+      'color': const Color(0xFFC2185B), // Dark pink for icon
+      'lightColor': const Color(0xFFFCE4EC), // Light pink background
     },
     'Infectious Disease': {
       'icon': Icons.coronavirus,
-      'color': const Color(0xFFFF7043),
-      'lightColor': const Color(0xFFFFF3E0),
+      'color': const Color(0xFFD84315), // Dark deep orange for icon
+      'lightColor': const Color(0xFFFBE9E7), // Light deep orange background
     },
   };
 
@@ -250,6 +255,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
     }
   }
+
   void _setupAnimations() {
     _fadeController = AnimationController(
       duration: const Duration(milliseconds: 1000),
@@ -307,7 +313,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _fetchAndSetDoctors() async {
     try {
-      final snapshot = await FirebaseFirestore.instance.collection('doctors').get();
+      final snapshot =
+      await FirebaseFirestore.instance.collection('doctors').get();
       _processDoctorData(snapshot.docs);
     } catch (e) {
       print('Error fetching doctors: $e');
@@ -330,7 +337,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     for (var doc in docs) {
       final data = doc.data() as Map<String, dynamic>;
 
-      if (data['specialty'] == null || data['specialty'].toString().trim().isEmpty) {
+      if (data['specialty'] == null ||
+          data['specialty'].toString().trim().isEmpty) {
         continue;
       }
 
@@ -366,7 +374,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       uniqueSpecializations.add(specialization);
       uniqueLocations.add(doctor.location);
 
-      specializationCounts[specialization] = (specializationCounts[specialization] ?? 0) + 1;
+      specializationCounts[specialization] =
+          (specializationCounts[specialization] ?? 0) + 1;
     }
 
     final sortedSpecializations = uniqueSpecializations.toList();
@@ -394,8 +403,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             doctor.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
             doctor.specialization.toLowerCase().contains(_searchController.text.toLowerCase()) ||
             doctor.hospital.toLowerCase().contains(_searchController.text.toLowerCase());
-        bool matchesSpecialization = _selectedSpecialization == 'All' || doctor.specialization == _selectedSpecialization;
-        bool matchesLocation = _selectedLocation == 'All' || doctor.location == _selectedLocation;
+        bool matchesSpecialization = _selectedSpecialization == 'All' ||
+            doctor.specialization == _selectedSpecialization;
+        bool matchesLocation =
+            _selectedLocation == 'All' || doctor.location == _selectedLocation;
         return matchesSearch && matchesSpecialization && matchesLocation;
       }).toList();
 
@@ -408,14 +419,17 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       for (var doctor in tempFilteredList) {
         if (doctor.location.toLowerCase() == patientCity) {
           sameCityDoctors.add(doctor);
-        } else if (_currentPosition != null && doctor.latitude != null && doctor.longitude != null) {
+        } else if (_currentPosition != null &&
+            doctor.latitude != null &&
+            doctor.longitude != null) {
           final distanceInMeters = Geolocator.distanceBetween(
             _currentPosition!.latitude,
             _currentPosition!.longitude,
             doctor.latitude!,
             doctor.longitude!,
           );
-          if (distanceInMeters <= 50000) { // 50 km radius
+          if (distanceInMeters <= 50000) {
+            // 50 km radius
             nearbyCityDoctors.add(doctor);
           } else {
             otherDoctors.add(doctor);
@@ -588,7 +602,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                           () {
                         Navigator.push(
                           context,
-                          MaterialPageRoute(builder: (_) => const ProfileScreen()),
+                          MaterialPageRoute(
+                              builder: (_) => const ProfileScreen()),
                         );
                       },
                     ),
@@ -624,12 +639,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         Container(
           padding: const EdgeInsets.all(6),
           decoration: BoxDecoration(
-            color: primaryBlue.withOpacity(0.1),
+            color: AppColors.redColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
           child: Icon(
             Icons.location_on_rounded,
-            color: primaryBlue,
+            color: AppColors.redColor,
             size: 16,
           ),
         ),
@@ -756,7 +771,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               Container(
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding:
+                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                 decoration: BoxDecoration(
                   color: primaryBlue,
                   borderRadius: BorderRadius.circular(12),
@@ -826,7 +842,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           color: Colors.white,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
-            color: isSelected ? color : color.withOpacity(0.2),
+            color: isSelected ? primaryBlue : Colors.grey.withOpacity(0.2),
             width: isSelected ? 2 : 1,
           ),
           boxShadow: [
@@ -845,8 +861,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
             children: [
               CircleAvatar(
                 radius: 20,
-                backgroundColor: color.withOpacity(0.15),
-                child: Icon(icon, color: color, size: 20),
+                backgroundColor: lightColor, // Light background color
+                child: Icon(icon, color: color, size: 20), // Dark icon color
               ),
               const SizedBox(height: 6),
               Flexible(
@@ -868,8 +884,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: isSelected
-                      ? color.withOpacity(0.25)
-                      : color.withOpacity(0.15),
+                      ? primaryBlue.withOpacity(0.25)
+                      : lightColor,
                   borderRadius: BorderRadius.circular(10),
                 ),
                 child: Text(
@@ -887,7 +903,6 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
-
   Widget _buildMoreCard() {
     return GestureDetector(
       onTap: () {
@@ -992,7 +1007,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           physics: const NeverScrollableScrollPhysics(),
           padding: const EdgeInsets.symmetric(horizontal: 24),
           itemCount: _filteredDoctors.length,
-          itemBuilder: (context, index) => _buildDoctorCard(_filteredDoctors[index], index),
+          itemBuilder: (context, index) =>
+              _buildDoctorCard(_filteredDoctors[index], index),
         ),
       ],
     );
@@ -1080,7 +1096,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 height: 72,
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
-                  border: Border.all(color: specialtyColor.withOpacity(0.2), width: 1.5),
+                  border: Border.all(
+                      color: specialtyColor.withOpacity(0.2), width: 1.5),
                 ),
                 child: doctor.imageUrl.isNotEmpty
                     ? ClipRRect(
@@ -1124,7 +1141,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded, color: Colors.grey[400], size: 16),
+                        Icon(Icons.location_on_rounded,
+                            color: Colors.grey[400], size: 16),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
@@ -1165,7 +1183,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       ),
                       child: const Text(
                         'Book',
-                        style: TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                        style: TextStyle(
+                            color: Colors.white, fontWeight: FontWeight.bold),
                       ),
                     ),
                   ),
@@ -1226,7 +1245,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color: isAvailable ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        color:
+        isAvailable ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

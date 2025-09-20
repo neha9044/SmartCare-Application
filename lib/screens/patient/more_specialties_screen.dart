@@ -65,7 +65,7 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen> {
           reviewCount: data['reviewCount'] ?? 0,
           experience: data['experience'] ?? 'N/A',
           imageUrl: data['profileImage'] ?? '',
-          availableSlots: (data['availableSlots'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? [],
+          availableSlots: (data['availableSlots'] as List<dynamic>?)?.map((e) => e.toString()).toList() ?? ['9:00 AM', '10:00 AM', '11:00 AM'],
           consultationFee: (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
           isAvailableToday: data['isAvailableToday'] ?? true,
           about: data['about'] ?? 'Experienced medical professional.',
