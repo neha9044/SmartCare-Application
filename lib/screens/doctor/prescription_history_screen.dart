@@ -29,7 +29,8 @@ class _PrescriptionHistoryScreenState extends State<PrescriptionHistoryScreen> {
     super.initState();
   }
 
-  void _onSavePrescription(Map<String, String> prescriptionData) {
+  // Updated method signature to accept Map<String, dynamic>
+  void _onSavePrescription(Map<String, dynamic> prescriptionData) {
     // Save the prescription directly to Firestore
     FirebaseFirestore.instance
         .collection('patients')

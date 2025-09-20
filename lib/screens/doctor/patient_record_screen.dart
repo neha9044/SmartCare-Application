@@ -37,7 +37,8 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> with TickerPr
     super.dispose();
   }
 
-  Future<void> _savePrescription(Map<String, String> prescriptionData) async {
+  // Updated method signature to accept Map<String, dynamic>
+  Future<void> _savePrescription(Map<String, dynamic> prescriptionData) async {
     try {
       await FirebaseFirestore.instance
           .collection('patients')
