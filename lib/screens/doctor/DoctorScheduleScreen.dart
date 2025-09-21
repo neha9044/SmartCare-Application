@@ -23,6 +23,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   DateTime _focusedDay = DateTime.now();
   DateTime? _selectedDay;
   late final ValueNotifier<List<QueryDocumentSnapshot>> _selectedAppointments;
+  bool _isLoading = true;
 
   @override
   void initState() {
@@ -39,18 +40,33 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   }
 
   Future<void> _getAppointmentsForDay(DateTime day) async {
+    setState(() => _isLoading = true);
     final startOfDay = DateTime(day.year, day.month, day.day);
     final endOfDay = startOfDay.add(const Duration(days: 1));
 
-    final querySnapshot = await FirebaseFirestore.instance
-        .collection('appointments')
-        .where('doctorId', isEqualTo: widget.doctorId)
-        .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
-        .where('date', isLessThan: Timestamp.fromDate(endOfDay))
-        .where('status', isNotEqualTo: AppointmentStatus.completed.toShortString()) // Added
-        .get();
+    try {
+      final querySnapshot = await FirebaseFirestore.instance
+          .collection('appointments')
+          .where('doctorId', isEqualTo: widget.doctorId)
+          .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
+          .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+          .get();
 
-    _selectedAppointments.value = querySnapshot.docs;
+      // FIX: Filter appointments locally to hide completed AND canceled ones
+      final filteredAppointments = querySnapshot.docs.where((doc) {
+        final data = doc.data() as Map<String, dynamic>;
+        final status = data['status'] as String?;
+        return status != AppointmentStatus.completed.toShortString() &&
+            status != AppointmentStatus.canceled.toShortString();
+      }).toList();
+
+      _selectedAppointments.value = filteredAppointments;
+    } catch (e) {
+      print('Error fetching appointments: $e');
+      _selectedAppointments.value = [];
+    } finally {
+      setState(() => _isLoading = false);
+    }
   }
 
   void _onDaySelected(DateTime selectedDay, DateTime focusedDay) {
@@ -70,7 +86,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
           .doc(docId)
           .update({'status': newStatus.toShortString()});
 
-      // Refetch appointments after updating the status to refresh the UI
       await _getAppointmentsForDay(_selectedDay!);
 
       ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +102,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text('Today\'s Schedule'),
+        title: Text('Schedule for ${_selectedDay?.day}/${_selectedDay?.month}/${_selectedDay?.year}'),
         backgroundColor: Theme.of(context).primaryColor,
       ),
       body: SingleChildScrollView(
@@ -161,59 +176,62 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
           style: TextStyle(fontSize: 22, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 16),
-        ValueListenableBuilder<List<QueryDocumentSnapshot>>(
-          valueListenable: _selectedAppointments,
-          builder: (context, appointments, _) {
-            if (appointments.isEmpty) {
-              return const Center(child: Text('No appointments for this day.'));
-            }
-            return ListView.builder(
-              shrinkWrap: true,
-              physics: const NeverScrollableScrollPhysics(),
-              itemCount: appointments.length,
-              itemBuilder: (context, index) {
-                final appointment = appointments[index];
-                final data = appointment.data() as Map<String, dynamic>;
-                return Card(
-                  elevation: 2,
-                  margin: const EdgeInsets.only(bottom: 10),
-                  child: ListTile(
-                    title: Text(data['patientName']),
-                    subtitle: Text('Time: ${data['time']}'),
-                    trailing: PopupMenuButton<AppointmentStatus>(
-                      onSelected: (AppointmentStatus result) {
-                        _updateAppointmentStatus(appointment.id, result);
-                      },
-                      itemBuilder: (BuildContext context) => <PopupMenuEntry<AppointmentStatus>>[
-                        const PopupMenuItem<AppointmentStatus>(
-                          value: AppointmentStatus.inProgress,
-                          child: Text('In Progress'),
-                        ),
-                        const PopupMenuItem<AppointmentStatus>(
-                          value: AppointmentStatus.completed,
-                          child: Text('Completed'),
-                        ),
-                      ],
-                    ),
-                    onTap: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => PatientRecordScreen(
-                            patientId: data['patientId'],
-                            patientName: data['patientName'],
-                            doctorDetails: widget.doctorDetails,
-                            scrollController: null,
+        if (_isLoading)
+          const Center(child: CircularProgressIndicator())
+        else
+          ValueListenableBuilder<List<QueryDocumentSnapshot>>(
+            valueListenable: _selectedAppointments,
+            builder: (context, appointments, _) {
+              if (appointments.isEmpty) {
+                return const Center(child: Text('No appointments for this day.'));
+              }
+              return ListView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                itemCount: appointments.length,
+                itemBuilder: (context, index) {
+                  final appointment = appointments[index];
+                  final data = appointment.data() as Map<String, dynamic>;
+                  return Card(
+                    elevation: 2,
+                    margin: const EdgeInsets.only(bottom: 10),
+                    child: ListTile(
+                      title: Text(data['patientName']),
+                      subtitle: Text('Time: ${data['time']}'),
+                      trailing: PopupMenuButton<AppointmentStatus>(
+                        onSelected: (AppointmentStatus result) {
+                          _updateAppointmentStatus(appointment.id, result);
+                        },
+                        itemBuilder: (BuildContext context) => <PopupMenuEntry<AppointmentStatus>>[
+                          const PopupMenuItem<AppointmentStatus>(
+                            value: AppointmentStatus.inProgress,
+                            child: Text('In Progress'),
                           ),
-                        ),
-                      );
-                    },
-                  ),
-                );
-              },
-            );
-          },
-        ),
+                          const PopupMenuItem<AppointmentStatus>(
+                            value: AppointmentStatus.completed,
+                            child: Text('Completed'),
+                          ),
+                        ],
+                      ),
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (context) => PatientRecordScreen(
+                              patientId: data['patientId'],
+                              patientName: data['patientName'],
+                              doctorDetails: widget.doctorDetails,
+                              scrollController: null,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  );
+                },
+              );
+            },
+          ),
       ],
     );
   }

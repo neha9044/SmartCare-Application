@@ -12,7 +12,6 @@ import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smartcare_app/utils/appointment_status.dart';
 
-// Import the new dialog widget
 import 'package:smartcare_app/screens/patient/rate_doctor_dialog.dart';
 
 class PatientDashboard extends StatefulWidget {
