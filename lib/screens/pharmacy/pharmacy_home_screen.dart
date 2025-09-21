@@ -24,36 +24,6 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   final LocationService _locationService = LocationService();
   final String? _currentPharmacyId = FirebaseAuth.instance.currentUser?.uid;
 
-  final List<pharmacy_models.Patient> _patients = [
-    pharmacy_models.Patient(
-      id: 'P001',
-      name: 'John Doe',
-      doctorName: 'Dr. Anna White',
-      orders: [
-        pharmacy_models.Order(id: 'O001', prescription: ['Amoxicillin 500mg - 2 times a day'], paymentStatus: 'Pending', isCanceled: false, isCompleted: false, isPickedUp: false),
-        pharmacy_models.Order(id: 'O002', prescription: ['Vitamin C - 1 tablet daily'], paymentStatus: 'Paid', isCanceled: false, isCompleted: true, isPickedUp: true),
-      ],
-    ),
-    pharmacy_models.Patient(
-      id: 'P002',
-      name: 'Jane Smith',
-      doctorName: 'Dr. Emily Chen',
-      orders: [
-        pharmacy_models.Order(id: 'O005', prescription: ['Lisinopril 10mg'], paymentStatus: 'Paid', isCanceled: false, isCompleted: true, isPickedUp: false),
-        pharmacy_models.Order(id: 'O006', prescription: ['Amlodipine 5mg'], paymentStatus: 'Pending', isCanceled: false, isCompleted: false, isPickedUp: false),
-      ],
-    ),
-    pharmacy_models.Patient(
-      id: 'P003',
-      name: 'Mark Davis',
-      doctorName: 'Dr. pranav kurkute',
-      orders: [
-        pharmacy_models.Order(id: 'O007', prescription: ['Zyrtec 10mg - 1 tablet daily'], paymentStatus: 'Pending', isCanceled: false, isCompleted: false, isPickedUp: false),
-        pharmacy_models.Order(id: 'O008', prescription: ['Tylenol 500mg'], paymentStatus: 'Paid', isCanceled: true, isCompleted: false, isPickedUp: false),
-      ],
-    ),
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -116,11 +86,13 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final allOrders = _patients.expand((patient) => patient.orders.map((order) => pharmacy_models.OrderWithPatient(order: order, patient: patient))).toList();
-    final pendingOrders = allOrders.where((o) => !o.order.isCompleted && !o.order.isCanceled).toList();
-    final completedOrders = allOrders.where((o) => o.order.isCompleted && !o.order.isPickedUp).toList();
-    final pickedUpOrders = allOrders.where((o) => o.order.isCompleted && o.order.isPickedUp).toList();
-    final canceledOrders = allOrders.where((o) => o.order.isCanceled).toList();
+    if (_currentPharmacyId == null) {
+      return Scaffold(
+        body: Center(
+          child: Text('Please log in as a pharmacy to view this page.'),
+        ),
+      );
+    }
 
     return Scaffold(
       backgroundColor: AppColors.scaffoldBackgroundColor,
@@ -133,7 +105,39 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
               child: Column(
                 children: [
                   const SizedBox(height: 24),
-                  _buildOrderBlocks(pendingOrders, completedOrders, pickedUpOrders, canceledOrders),
+                  StreamBuilder<QuerySnapshot>(
+                    stream: FirebaseFirestore.instance
+                        .collection('pharmacy_orders')
+                        .where('pharmacyId', isEqualTo: _currentPharmacyId)
+                        .snapshots(),
+                    builder: (context, snapshot) {
+                      if (snapshot.connectionState == ConnectionState.waiting) {
+                        return Center(child: CircularProgressIndicator());
+                      }
+                      if (snapshot.hasError) {
+                        return Center(child: Text('Error: ${snapshot.error}'));
+                      }
+                      final orders = snapshot.data?.docs ?? [];
+
+                      final pendingOrders = orders.where((order) => order['status'] == 'pending').toList();
+                      final completedOrders = orders.where((order) => order['status'] == 'completed').toList();
+                      final pickedUpOrders = orders.where((order) => order['status'] == 'picked_up').toList();
+                      final canceledOrders = orders.where((order) => order['status'] == 'canceled').toList();
+
+                      return _buildOrderBlocks(
+                          pendingOrders.length,
+                          completedOrders.length,
+                          pickedUpOrders.length,
+                          canceledOrders.length,
+                          {
+                            'pending': pendingOrders,
+                            'completed': completedOrders,
+                            'picked_up': pickedUpOrders,
+                            'canceled': canceledOrders,
+                          }
+                      );
+                    },
+                  ),
                 ],
               ),
             ),
@@ -239,10 +243,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   }
 
   Widget _buildOrderBlocks(
-      List<pharmacy_models.OrderWithPatient> pending,
-      List<pharmacy_models.OrderWithPatient> completed,
-      List<pharmacy_models.OrderWithPatient> pickedUp,
-      List<pharmacy_models.OrderWithPatient> canceled,
+      int pendingCount,
+      int completedCount,
+      int pickedUpCount,
+      int canceledCount,
+      Map<String, List<DocumentSnapshot>> orders,
       ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -253,10 +258,10 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          _buildOrderBlock(context, 'Pending Orders', pending, AppColors.orange, Icons.access_time_filled),
-          _buildOrderBlock(context, 'Completed Orders', completed, AppColors.green, Icons.check_circle),
-          _buildOrderBlock(context, 'Picked Up Orders', pickedUp, AppColors.primaryColor, Icons.shopping_bag),
-          _buildOrderBlock(context, 'Canceled Orders', canceled, AppColors.red, Icons.cancel),
+          _buildOrderBlock(context, 'Pending Orders', pendingCount, AppColors.orange, Icons.access_time_filled, orders['pending']!),
+          _buildOrderBlock(context, 'Completed Orders', completedCount, AppColors.green, Icons.check_circle, orders['completed']!),
+          _buildOrderBlock(context, 'Picked Up Orders', pickedUpCount, AppColors.primaryColor, Icons.shopping_bag, orders['picked_up']!),
+          _buildOrderBlock(context, 'Canceled Orders', canceledCount, AppColors.red, Icons.cancel, orders['canceled']!),
         ],
       ),
     );
@@ -265,9 +270,10 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   Widget _buildOrderBlock(
       BuildContext context,
       String title,
-      List<pharmacy_models.OrderWithPatient> orders,
+      int count,
       Color color,
       IconData icon,
+      List<DocumentSnapshot> orders,
       ) {
     return GestureDetector(
       onTap: () {
@@ -314,7 +320,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             ),
             const SizedBox(height: 6),
             Text(
-              '${orders.length} orders',
+              '$count orders',
               style: TextStyle(
                 fontSize: 12,
                 color: Colors.grey[600],

@@ -6,6 +6,7 @@ import 'package:smartcare_app/services/auth_service.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'dart:math';
 import 'package:smartcare_app/utils/appointment_status.dart';
+import 'package:intl/intl.dart';
 
 class BookAppointmentScreen extends StatefulWidget {
   final Doctor doctor;
@@ -36,6 +37,40 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     _fetchDoctorTimeSlots(); // Fetch slots when the screen initializes
   }
 
+  // New helper function to expand time slots
+  List<String> _expandTimeSlots(List<String> timeRanges) {
+    List<String> expandedSlots = [];
+    final format = DateFormat("hh:mm a");
+
+    for (String range in timeRanges) {
+      if (range.contains(' - ')) {
+        final parts = range.split(' - ');
+        if (parts.length == 2) {
+          try {
+            DateTime start = format.parse(parts[0]);
+            DateTime end = format.parse(parts[1]);
+
+            // Add slots until the hour before the end time
+            while (start.isBefore(end)) {
+              expandedSlots.add(format.format(start));
+              start = start.add(const Duration(hours: 1));
+            }
+            // Add the end time itself
+            expandedSlots.add(format.format(end));
+          } catch (e) {
+            print('Error parsing time range: $e');
+            // If parsing fails, just add the original string as a fallback
+            expandedSlots.add(range);
+          }
+        }
+      } else {
+        // If the slot is not a range, add it directly
+        expandedSlots.add(range);
+      }
+    }
+    return expandedSlots;
+  }
+
   Future<void> _fetchDoctorTimeSlots() async {
     try {
       final docSnapshot = await FirebaseFirestore.instance
@@ -45,8 +80,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
       if (docSnapshot.exists) {
         final data = docSnapshot.data() as Map<String, dynamic>;
+        final List<String> fetchedRanges = List<String>.from(data['availableSlots'] ?? []);
         setState(() {
-          _availableSlots = List<String>.from(data['availableSlots'] ?? []);
+          _availableSlots = _expandTimeSlots(fetchedRanges);
         });
       }
     } catch (e) {

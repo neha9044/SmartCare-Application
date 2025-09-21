@@ -58,29 +58,87 @@ class _PatientRecordScreenState extends State<PatientRecordScreen> with TickerPr
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      appBar: AppBar(
-        title: Text('Patient Record: ${widget.patientName}'),
-        bottom: TabBar(
-          controller: _tabController,
-          tabs: const [
-            Tab(icon: Icon(Icons.note_add), text: 'New Prescription'),
-            Tab(icon: Icon(Icons.history), text: 'History'),
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Custom Header with Patient Name and Navigation
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade200,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  IconButton(
+                    icon: const Icon(Icons.arrow_back, color: Color(0xFF2E3A59)),
+                    onPressed: () => Navigator.of(context).pop(),
+                    padding: EdgeInsets.zero,
+                    constraints: const BoxConstraints(),
+                  ),
+                  const SizedBox(width: 12),
+                  const Icon(Icons.person, color: Color(0xFF1E88E5), size: 24),
+                  const SizedBox(width: 8),
+                  Expanded(
+                    child: Text(
+                      widget.patientName,
+                      style: const TextStyle(
+                        fontSize: 20,
+                        fontWeight: FontWeight.w600,
+                        color: Color(0xFF2E3A59),
+                      ),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+
+            // Tab Bar
+            Container(
+              decoration: BoxDecoration(
+                color: Colors.white,
+                border: Border(
+                  bottom: BorderSide(color: Colors.grey.shade200, width: 1),
+                ),
+              ),
+              child: TabBar(
+                controller: _tabController,
+                indicatorColor: const Color(0xFF1E88E5),
+                labelColor: const Color(0xFF1E88E5),
+                unselectedLabelColor: Colors.grey,
+                tabs: const [
+                  Tab(icon: Icon(Icons.note_add), text: 'New Prescription'),
+                  Tab(icon: Icon(Icons.history), text: 'History'),
+                ],
+              ),
+            ),
+
+            // Tab Content - Full Screen
+            Expanded(
+              child: TabBarView(
+                controller: _tabController,
+                children: [
+                  PrescriptionScreen(
+                    onSave: _savePrescription,
+                    patientId: widget.patientId,
+                    patientName: widget.patientName,
+                    doctorDetails: widget.doctorDetails,
+                  ),
+                  HistoryScreen(
+                    patientId: widget.patientId,
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
-      ),
-      body: TabBarView(
-        controller: _tabController,
-        children: [
-          PrescriptionScreen(
-            onSave: _savePrescription,
-            patientId: widget.patientId,
-            patientName: widget.patientName,
-            doctorDetails: widget.doctorDetails,
-          ),
-          HistoryScreen(
-            patientId: widget.patientId,
-          ),
-        ],
       ),
     );
   }

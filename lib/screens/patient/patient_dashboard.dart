@@ -25,10 +25,10 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
   int _selectedIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
+  int _unreadNotifications = 0; // New state variable for notification count
 
   final User? currentUser = FirebaseAuth.instance.currentUser;
 
-  // Healthcare theme colors
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color lightBlue = const Color(0xFFE3F2FD);
   final Color darkBlue = const Color(0xFF1976D2);
@@ -43,7 +43,6 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
     const NotificationsScreen(),
   ];
 
-  // Navigation items with enhanced styling
   final List<Map<String, dynamic>> _navItems = [
     {
       'icon': Icons.home_rounded,
@@ -93,13 +92,12 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
     ));
     _animationController.forward();
 
-    // Check for completed appointments when the dashboard loads
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _checkForCompletedAppointments();
+      _listenForUnreadNotifications(); // Start listening for notifications
     });
   }
 
-  // New method to check and show the rating dialog
   void _checkForCompletedAppointments() async {
     if (currentUser == null) return;
 
@@ -107,7 +105,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
         .collection('appointments')
         .where('patientId', isEqualTo: currentUser!.uid)
         .where('status', isEqualTo: AppointmentStatus.completed.toShortString())
-        .where('rated', isEqualTo: false) // Check for unrated appointments
+        .where('rated', isEqualTo: false)
         .limit(1)
         .get();
 
@@ -131,6 +129,23 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
     }
   }
 
+  // New method to listen for unread notifications
+  void _listenForUnreadNotifications() {
+    if (currentUser == null) return;
+    FirebaseFirestore.instance
+        .collection('notifications')
+        .where('patientId', isEqualTo: currentUser!.uid)
+        .where('read', isEqualTo: false)
+        .snapshots()
+        .listen((snapshot) {
+      if (mounted) {
+        setState(() {
+          _unreadNotifications = snapshot.docs.length;
+        });
+      }
+    });
+  }
+
   @override
   void dispose() {
     _animationController.dispose();
@@ -143,11 +158,9 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
         _selectedIndex = index;
       });
 
-      // Trigger animation for selection
       _animationController.reset();
       _animationController.forward();
 
-      // Add haptic feedback
       HapticFeedback.lightImpact();
     }
   }
@@ -226,6 +239,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
     final isSelected = _selectedIndex == index;
     final item = _navItems[index];
     final itemColor = item['color'] as Color;
+    final isNotificationTab = item['label'] == 'Notifications';
 
     return Expanded(
       child: GestureDetector(
@@ -249,14 +263,45 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
                         : Colors.transparent,
                     borderRadius: BorderRadius.circular(15),
                   ),
-                  child: ScaleTransition(
-                    scale: isSelected ? _scaleAnimation :
-                    const AlwaysStoppedAnimation(1.0),
-                    child: Icon(
-                      isSelected ? item['activeIcon'] : item['icon'],
-                      size: isSelected ? 24 : 20,
-                      color: isSelected ? itemColor : Colors.grey[600],
-                    ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      ScaleTransition(
+                        scale: isSelected ? _scaleAnimation :
+                        const AlwaysStoppedAnimation(1.0),
+                        child: Icon(
+                          isSelected ? item['activeIcon'] : item['icon'],
+                          size: isSelected ? 24 : 20,
+                          color: isSelected ? itemColor : Colors.grey[600],
+                        ),
+                      ),
+                      if (isNotificationTab && _unreadNotifications > 0)
+                        Positioned(
+                          top: 0,
+                          right: 0,
+                          child: Container(
+                            padding: const EdgeInsets.all(2),
+                            decoration: BoxDecoration(
+                              color: Colors.red,
+                              borderRadius: BorderRadius.circular(10),
+                              border: Border.all(color: Colors.white, width: 1.5),
+                            ),
+                            constraints: const BoxConstraints(
+                              minWidth: 16,
+                              minHeight: 16,
+                            ),
+                            child: Text(
+                              _unreadNotifications.toString(),
+                              style: const TextStyle(
+                                color: Colors.white,
+                                fontSize: 10,
+                                fontWeight: FontWeight.bold,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ),
+                        ),
+                    ],
                   ),
                 ),
                 AnimatedContainer(

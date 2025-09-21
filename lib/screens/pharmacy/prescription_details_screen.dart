@@ -2,16 +2,15 @@
 
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/constants/colors.dart';
-import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 class PrescriptionDetailsScreen extends StatefulWidget {
-  final Order order;
-  final Patient patient;
+  final DocumentSnapshot orderDoc;
 
   const PrescriptionDetailsScreen({
     Key? key,
-    required this.order,
-    required this.patient,
+    required this.orderDoc,
   }) : super(key: key);
 
   @override
@@ -19,25 +18,81 @@ class PrescriptionDetailsScreen extends StatefulWidget {
 }
 
 class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
-  late Order _order;
-  late Patient _patient;
+  late Map<String, dynamic> _orderData;
+  late String _orderId;
 
   @override
   void initState() {
     super.initState();
-    _order = widget.order;
-    _patient = widget.patient;
+    _orderData = widget.orderDoc.data() as Map<String, dynamic>;
+    _orderId = widget.orderDoc.id;
   }
 
-  void _updateOrderState() {
-    setState(() {
-      _order = _order;
-      _patient = _patient;
+  void _updateOrderStatus(String newStatus) async {
+    await FirebaseFirestore.instance.collection('pharmacy_orders').doc(_orderId).update({
+      'status': newStatus,
     });
+    setState(() {
+      _orderData['status'] = newStatus;
+    });
+
+    // Add a new document to the notifications collection when the status is completed
+    if (newStatus == 'completed') {
+      try {
+        // Fetch pharmacy name
+        final pharmacyId = FirebaseAuth.instance.currentUser!.uid;
+        final pharmacyDoc = await FirebaseFirestore.instance.collection('pharmacies').doc(pharmacyId).get();
+        final pharmacyName = pharmacyDoc.data()?['name'] ?? 'The Pharmacy';
+
+        await FirebaseFirestore.instance.collection('notifications').add({
+          'patientId': _orderData['patientId'],
+          'message': 'Your medicines are ready at $pharmacyName! Get them',
+          'type': 'prescription_ready',
+          'read': false,
+          'timestamp': FieldValue.serverTimestamp(),
+          'orderId': _orderId,
+        });
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Order status updated to $newStatus and patient notified.')),
+        );
+      } catch (e) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(content: Text('Failed to send notification: $e')),
+        );
+      }
+    } else {
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Order status updated to $newStatus.')),
+      );
+    }
   }
 
   @override
   Widget build(BuildContext context) {
+    final String status = _orderData['status'] ?? 'pending';
+    final List<dynamic> medicines = _orderData['prescription'] ?? [];
+
+    String statusText;
+    Color statusColor;
+
+    switch (status) {
+      case 'canceled':
+        statusText = 'Canceled';
+        statusColor = AppColors.red;
+        break;
+      case 'completed':
+        statusText = 'Completed';
+        statusColor = AppColors.green;
+        break;
+      case 'picked_up':
+        statusText = 'Picked Up';
+        statusColor = AppColors.darkGrey;
+        break;
+      default:
+        statusText = 'Pending';
+        statusColor = AppColors.orange;
+    }
+
     return Scaffold(
       appBar: AppBar(
         title: const Text('Prescription Details', style: TextStyle(color: Colors.white)),
@@ -51,28 +106,21 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
           children: [
             _buildInfoCard(
               title: 'Prescribed by',
-              subtitle: 'Dr. ${_patient.doctorName}',
+              subtitle: 'Dr. ${_orderData['doctorName'] ?? 'N/A'}',
               icon: Icons.local_hospital,
               iconColor: AppColors.primaryColor,
             ),
             const SizedBox(height: 16),
             _buildInfoCard(
               title: 'Patient Name',
-              subtitle: _patient.name,
+              subtitle: _orderData['patientName'] ?? 'N/A',
               icon: Icons.person,
               iconColor: AppColors.green,
             ),
             const SizedBox(height: 16),
-            _buildInfoCard(
-              title: 'Order ID',
-              subtitle: _order.id,
-              icon: Icons.receipt_long,
-              iconColor: AppColors.orange,
-            ),
+            _buildMedicinesSection(medicines),
             const SizedBox(height: 16),
-            _buildMedicinesSection(_order.prescription),
-            const SizedBox(height: 16),
-            _buildStatusSection(),
+            _buildStatusSection(status, statusText, statusColor),
           ],
         ),
       ),
@@ -130,7 +178,7 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
     );
   }
 
-  Widget _buildMedicinesSection(List<String> medicines) {
+  Widget _buildMedicinesSection(List<dynamic> medicines) {
     return Container(
       padding: const EdgeInsets.all(16),
       decoration: BoxDecoration(
@@ -160,31 +208,31 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
           if (medicines.isEmpty)
             const Text('No medicines prescribed.')
           else
-            ...medicines.map((med) => Padding(
-              padding: const EdgeInsets.only(bottom: 8.0),
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  const Icon(Icons.medication, color: AppColors.primaryColor, size: 20),
-                  const SizedBox(width: 8),
-                  Expanded(
-                    child: Text(
-                      med,
-                      style: const TextStyle(fontSize: 14, height: 1.4),
+            ...medicines.map((med) {
+              final medData = med as Map<String, dynamic>;
+              return Padding(
+                padding: const EdgeInsets.only(bottom: 8.0),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Icon(Icons.medication, color: AppColors.primaryColor, size: 20),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Text(
+                        '${medData['medicineName']} - ${medData['dosageAndFrequency']}',
+                        style: const TextStyle(fontSize: 14, height: 1.4),
+                      ),
                     ),
-                  ),
-                ],
-              ),
-            )).toList(),
+                  ],
+                ),
+              );
+            }).toList(),
         ],
       ),
     );
   }
 
-  Widget _buildStatusSection() {
-    String statusText = _order.isCanceled ? 'Canceled' : (_order.isPickedUp ? 'Picked Up' : (_order.isCompleted ? 'Completed' : 'Pending'));
-    Color statusColor = _order.isCanceled ? AppColors.red : (_order.isPickedUp ? AppColors.darkGrey : (_order.isCompleted ? AppColors.green : AppColors.orange));
-
+  Widget _buildStatusSection(String status, String statusText, Color statusColor) {
     return Container(
       width: double.infinity,
       padding: const EdgeInsets.all(16),
@@ -209,20 +257,12 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
               ),
             ],
           ),
-          if (!_order.isCompleted && !_order.isCanceled)
+          if (status == 'pending')
             Row(
               mainAxisSize: MainAxisSize.min,
               children: [
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _order.isCanceled = true;
-                      _updateOrderState();
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order marked as canceled.')),
-                    );
-                  },
+                  onTap: () => _updateOrderStatus('canceled'),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -234,15 +274,7 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
                 ),
                 const SizedBox(width: 8),
                 GestureDetector(
-                  onTap: () {
-                    setState(() {
-                      _order.isCompleted = true;
-                      _updateOrderState();
-                    });
-                    ScaffoldMessenger.of(context).showSnackBar(
-                      const SnackBar(content: Text('Order marked as completed!')),
-                    );
-                  },
+                  onTap: () => _updateOrderStatus('completed'),
                   child: Container(
                     padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
@@ -254,18 +286,9 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
                 ),
               ],
             ),
-          // Check if the order is completed but NOT picked up and show icon
-          if (_order.isCompleted && !_order.isPickedUp)
+          if (status == 'completed')
             GestureDetector(
-              onTap: () {
-                setState(() {
-                  _order.isPickedUp = true;
-                  _updateOrderState();
-                });
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text('Order marked as picked up.')),
-                );
-              },
+              onTap: () => _updateOrderStatus('picked_up'),
               child: Container(
                 padding: const EdgeInsets.all(8),
                 decoration: BoxDecoration(
@@ -275,10 +298,9 @@ class _PrescriptionDetailsScreenState extends State<PrescriptionDetailsScreen> {
                 child: const Icon(Icons.shopping_bag, color: Colors.white),
               ),
             ),
-          // Display icons for completed or canceled status
-          if (_order.isPickedUp)
+          if (status == 'picked_up')
             Icon(Icons.shopping_bag, color: AppColors.darkGrey),
-          if (_order.isCanceled)
+          if (status == 'canceled')
             Icon(Icons.cancel, color: AppColors.red),
         ],
       ),

@@ -1,12 +1,12 @@
 // lib/screens/pharmacy/pharmacy_orders_list.dart
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/constants/colors.dart';
-import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart';
 import 'package:smartcare_app/screens/pharmacy/prescription_details_screen.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 
 class PharmacyOrdersListScreen extends StatefulWidget {
   final String title;
-  final List<OrderWithPatient> orders;
+  final List<DocumentSnapshot> orders;
 
   const PharmacyOrdersListScreen({
     super.key,
@@ -20,7 +20,7 @@ class PharmacyOrdersListScreen extends StatefulWidget {
 
 class _PharmacyOrdersListScreenState extends State<PharmacyOrdersListScreen> {
   final TextEditingController _searchController = TextEditingController();
-  List<OrderWithPatient> _filteredOrders = [];
+  List<DocumentSnapshot> _filteredOrders = [];
 
   @override
   void initState() {
@@ -39,9 +39,10 @@ class _PharmacyOrdersListScreenState extends State<PharmacyOrdersListScreen> {
     final query = _searchController.text.toLowerCase();
     setState(() {
       _filteredOrders = widget.orders.where((order) {
-        // Updated logic to search by both patient name and doctor name
-        return order.patient.doctorName.toLowerCase().contains(query) ||
-            order.patient.name.toLowerCase().contains(query);
+        final data = order.data() as Map<String, dynamic>;
+        final patientName = data['patientName']?.toLowerCase() ?? '';
+        final doctorName = data['doctorName']?.toLowerCase() ?? '';
+        return patientName.contains(query) || doctorName.contains(query);
       }).toList();
     });
   }
@@ -81,7 +82,7 @@ class _PharmacyOrdersListScreenState extends State<PharmacyOrdersListScreen> {
     );
   }
 
-  Widget _buildOrderList(List<OrderWithPatient> orders) {
+  Widget _buildOrderList(List<DocumentSnapshot> orders) {
     if (orders.isEmpty) {
       return const Center(
         child: Text(
@@ -94,18 +95,43 @@ class _PharmacyOrdersListScreenState extends State<PharmacyOrdersListScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 16),
       itemCount: orders.length,
       itemBuilder: (context, index) {
-        final orderWithPatient = orders[index];
-        return _buildOrderCardItem(orderWithPatient);
+        final orderDoc = orders[index];
+        return _buildOrderCardItem(orderDoc);
       },
     );
   }
 
-  Widget _buildOrderCardItem(OrderWithPatient orderWithPatient) {
-    final order = orderWithPatient.order;
-    final patient = orderWithPatient.patient;
-    Color cardColor = order.isCanceled ? Colors.red.shade50 : (order.isCompleted && order.isPickedUp ? Colors.green.shade50 : Colors.blue.shade50);
-    IconData icon = order.isCanceled ? Icons.cancel : (order.isCompleted ? Icons.check_circle : Icons.access_time);
-    Color iconColor = order.isCanceled ? AppColors.red : (order.isCompleted ? AppColors.green : AppColors.orange);
+  Widget _buildOrderCardItem(DocumentSnapshot orderDoc) {
+    final order = orderDoc.data() as Map<String, dynamic>;
+    final patientName = order['patientName'] ?? 'N/A';
+    final doctorName = order['doctorName'] ?? 'N/A';
+    final status = order['status'] ?? 'pending';
+
+    Color cardColor;
+    IconData icon;
+    Color iconColor;
+
+    switch (status) {
+      case 'canceled':
+        cardColor = Colors.red.shade50;
+        icon = Icons.cancel;
+        iconColor = AppColors.red;
+        break;
+      case 'completed':
+        cardColor = Colors.green.shade50;
+        icon = Icons.check_circle;
+        iconColor = AppColors.green;
+        break;
+      case 'picked_up':
+        cardColor = Colors.grey.shade200;
+        icon = Icons.shopping_bag;
+        iconColor = AppColors.darkGrey;
+        break;
+      default:
+        cardColor = Colors.blue.shade50;
+        icon = Icons.access_time;
+        iconColor = AppColors.orange;
+    }
 
     return GestureDetector(
       onTap: () {
@@ -113,8 +139,7 @@ class _PharmacyOrdersListScreenState extends State<PharmacyOrdersListScreen> {
           context,
           MaterialPageRoute(
             builder: (context) => PrescriptionDetailsScreen(
-              order: order,
-              patient: patient,
+              orderDoc: orderDoc,
             ),
           ),
         );
@@ -131,14 +156,13 @@ class _PharmacyOrdersListScreenState extends State<PharmacyOrdersListScreen> {
             child: Icon(icon, color: Colors.white),
           ),
           title: Text(
-            'Patient: ${patient.name}',
+            'Patient: $patientName',
             style: const TextStyle(fontWeight: FontWeight.bold),
           ),
           subtitle: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Text('Order ID: ${order.id}'),
-              Text('Doctor: ${patient.doctorName}'),
+              Text('Doctor: $doctorName'),
             ],
           ),
           trailing: const Icon(Icons.arrow_forward_ios, size: 16),

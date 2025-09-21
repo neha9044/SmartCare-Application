@@ -9,7 +9,10 @@ import 'package:smartcare_app/utils/appointment_status.dart';
 import 'package:smartcare_app/screens/doctor/patient_record_screen.dart';
 import 'package:smartcare_app/screens/doctor/DoctorProfileScreen.dart';
 import 'package:smartcare_app/screens/doctor/chat_inbox_screen.dart';
-import 'package:smartcare_app/screens/doctor/DoctorScheduleScreen.dart'; // New Import for the schedule screen
+import 'package:smartcare_app/screens/doctor/DoctorScheduleScreen.dart';
+import 'package:geolocator/geolocator.dart';
+import 'package:geocoding/geocoding.dart';
+import 'package:smartcare_app/services/location_service.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({Key? key}) : super(key: key);
@@ -31,9 +34,15 @@ class _DoctorDashboardState extends State<DoctorDashboard>
   late AnimationController _slideController;
   late Animation<Offset> _slideAnimation;
 
+  String _currentLocation = 'Fetching location...';
+  final LocationService _locationService = LocationService();
+
+  // Healthcare theme colors - updated background and chat colors
   final Color primaryBlue = const Color(0xFF2196F3);
+  final Color lightBlue = const Color(0xFFE3F2FD);
   final Color darkBlue = const Color(0xFF1976D2);
-  final Color backgroundColor = const Color(0xFFF5F7FA);
+  final Color backgroundColor = const Color(0xFFE1E6ED); // Off-white light bluish
+  final Color redColor = const Color(0xFFE57373);
 
   @override
   void initState() {
@@ -42,6 +51,41 @@ class _DoctorDashboardState extends State<DoctorDashboard>
     print('Current Logged-in User ID: $_currentDoctorId');
     _setupAnimations();
     _fetchDoctorData();
+    _fetchLocation();
+  }
+
+  Future<void> _fetchLocation() async {
+    try {
+      final hasPermission = await _locationService.handleLocationPermission();
+      if (!hasPermission) {
+        setState(() {
+          _currentLocation = 'Permission Denied';
+        });
+        return;
+      }
+      Position position = await Geolocator.getCurrentPosition(
+        desiredAccuracy: LocationAccuracy.high,
+      );
+      List<Placemark> placemarks = await placemarkFromCoordinates(
+        position.latitude,
+        position.longitude,
+      );
+      if (placemarks.isNotEmpty) {
+        Placemark place = placemarks.first;
+        String? locality = place.locality;
+        setState(() {
+          _currentLocation = locality ?? 'Location not found';
+        });
+      } else {
+        setState(() {
+          _currentLocation = 'Location not found';
+        });
+      }
+    } catch (e) {
+      setState(() {
+        _currentLocation = 'Location error';
+      });
+    }
   }
 
   void _setupAnimations() {
@@ -114,17 +158,17 @@ class _DoctorDashboardState extends State<DoctorDashboard>
               child: CustomScrollView(
                 physics: const BouncingScrollPhysics(),
                 slivers: [
-                  _buildStylishHeader(),
+                  _buildSliverHeader(),
                   SliverToBoxAdapter(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const SizedBox(height: 24),
+                        const SizedBox(height: 32),
+                        _buildScheduleCard(),
+                        const SizedBox(height: 16),
                         _buildQueueManagementCard(),
                         const SizedBox(height: 16),
                         _buildChatInboxCard(),
-                        const SizedBox(height: 16),
-                        _buildScheduleCard(), // The new schedule card
                         const SizedBox(height: 100),
                       ],
                     ),
@@ -138,110 +182,182 @@ class _DoctorDashboardState extends State<DoctorDashboard>
     );
   }
 
-  Widget _buildStylishHeader() {
+  Widget _buildSliverHeader() {
     return SliverToBoxAdapter(
       child: Container(
-        margin: const EdgeInsets.all(20),
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 24),
-        decoration: BoxDecoration(
-          gradient: LinearGradient(
-            colors: [primaryBlue, darkBlue],
-            begin: Alignment.topLeft,
-            end: Alignment.bottomRight,
-          ),
-          borderRadius: BorderRadius.circular(24),
-          boxShadow: [
-            BoxShadow(
-              color: darkBlue.withOpacity(0.3),
-              blurRadius: 12,
-              offset: const Offset(0, 6),
-            ),
-          ],
-        ),
-        child: Row(
+        padding: const EdgeInsets.fromLTRB(24, 20, 24, 0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            GestureDetector(
-              onTap: () {
-                if (_currentDoctorId != null) {
-                  Navigator.push(
-                    context,
-                    MaterialPageRoute(
-                      builder: (context) =>
-                          DoctorProfileScreen(doctorId: _currentDoctorId!),
-                    ),
-                  );
-                }
-              },
-              child: CircleAvatar(
-                radius: 36,
-                backgroundColor: Colors.white,
-                backgroundImage: _profileImageUrl.isNotEmpty
-                    ? NetworkImage(_profileImageUrl)
-                    : null,
-                child: _profileImageUrl.isEmpty
-                    ? Icon(Icons.person, color: darkBlue, size: 40)
-                    : null,
-              ),
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      RichText(
+                        text: TextSpan(
+                          children: [
+                            TextSpan(
+                              text: 'Hello ',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.w400,
+                                color: Colors.grey[700],
+                              ),
+                            ),
+                            TextSpan(
+                              text: 'Dr. $_doctorName',
+                              style: TextStyle(
+                                fontSize: 28,
+                                fontWeight: FontWeight.bold,
+                                color: darkBlue,
+                              ),
+                            ),
+                          ],
+                        ),
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                      const SizedBox(height: 4),
+                      Text(
+                        'Ready to help your patients today?',
+                        style: TextStyle(
+                          fontSize: 14,
+                          color: Colors.grey[600],
+                          fontWeight: FontWeight.w400,
+                          fontStyle: FontStyle.italic,
+                        ),
+                      ),
+                      const SizedBox(height: 12),
+                      _buildLocationSection(),
+                    ],
+                  ),
+                ),
+                _buildHeaderIconButton(
+                  Icons.person_outline_rounded,
+                  primaryBlue,
+                      () {
+                    if (_currentDoctorId != null) {
+                      Navigator.push(
+                        context,
+                        MaterialPageRoute(
+                          builder: (context) =>
+                              DoctorProfileScreen(doctorId: _currentDoctorId!),
+                        ),
+                      );
+                    }
+                  },
+                ),
+              ],
             ),
-            const SizedBox(width: 20),
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    "Welcome back,",
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.white.withOpacity(0.9),
-                      fontWeight: FontWeight.w400,
-                    ),
-                  ),
-                  const SizedBox(height: 6),
-                  Text(
-                    "Dr. $_doctorName",
-                    style: const TextStyle(
-                      fontSize: 28,
-                      fontWeight: FontWeight.bold,
-                      color: Colors.white,
-                      letterSpacing: 0.5,
-                    ),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                  ),
-                ],
-              ),
-            )
           ],
         ),
       ),
     );
   }
 
-  Widget _buildQueueManagementCard() {
+  Widget _buildHeaderIconButton(IconData icon, Color color, VoidCallback onTap) {
+    return Container(
+      width: 48,
+      height: 48,
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: color.withOpacity(0.2), width: 1),
+      ),
+      child: IconButton(
+        icon: Icon(icon, color: color, size: 22),
+        onPressed: onTap,
+      ),
+    );
+  }
+
+  Widget _buildLocationSection() {
+    return Row(
+      children: [
+        Container(
+          padding: const EdgeInsets.all(6),
+          decoration: BoxDecoration(
+            color: redColor.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(10),
+          ),
+          child: Icon(
+            Icons.location_on_rounded,
+            color: redColor,
+            size: 16,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'Current Location',
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 1),
+              Row(
+                children: [
+                  Text(
+                    _currentLocation,
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: darkBlue,
+                      fontWeight: FontWeight.w600,
+                    ),
+                  ),
+                  const SizedBox(width: 4),
+                  Icon(
+                    Icons.keyboard_arrow_down_rounded,
+                    color: Colors.grey[600],
+                    size: 16,
+                  ),
+                ],
+              ),
+            ],
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildScheduleCard() {
     if (_currentDoctorId == null) {
       return Container();
     }
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Card(
-        elevation: 5,
+        elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: InkWell(
           onTap: () {
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AppointmentsScreen(doctorId: _currentDoctorId!),
+                builder: (context) => DoctorScheduleScreen(
+                  doctorId: _currentDoctorId!,
+                  doctorDetails: _doctorDetails,
+                ),
               ),
             );
           },
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF3498DB).withOpacity(0.1),
-                  const Color(0xFF3498DB).withOpacity(0.05),
+                  const Color(0xFF4CAF50).withOpacity(0.1),
+                  const Color(0xFF4CAF50).withOpacity(0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -255,32 +371,159 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3498DB),
-                      borderRadius: BorderRadius.circular(15),
+                      color: const Color(0xFF4CAF50),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF3498DB).withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          color: const Color(0xFF4CAF50).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.queue, color: Colors.white, size: 30),
+                    child: const Icon(
+                        Icons.calendar_today_rounded,
+                        color: Colors.white,
+                        size: 30
+                    ),
                   ),
                   const SizedBox(width: 20),
                   const Expanded(
-                    child: Text(
-                      "Queue Management",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3498DB),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Today's Schedule",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF4CAF50),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "View and manage your appointments",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Color(0xFF3498DB),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF4CAF50).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Color(0xFF4CAF50),
+                      size: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildQueueManagementCard() {
+    if (_currentDoctorId == null) {
+      return Container();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => AppointmentsScreen(doctorId: _currentDoctorId!),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF2196F3).withOpacity(0.1),
+                  const Color(0xFF2196F3).withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3),
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF2196F3).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                        Icons.queue_rounded,
+                        color: Colors.white,
+                        size: 30
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Queue Management",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF2196F3),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Manage patient appointments queue",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF2196F3).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Color(0xFF2196F3),
+                      size: 16,
+                    ),
                   ),
                 ],
               ),
@@ -295,7 +538,7 @@ class _DoctorDashboardState extends State<DoctorDashboard>
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: Card(
-        elevation: 5,
+        elevation: 6,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         child: InkWell(
           onTap: () {
@@ -306,13 +549,14 @@ class _DoctorDashboardState extends State<DoctorDashboard>
               ),
             );
           },
+          borderRadius: BorderRadius.circular(20),
           child: Container(
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(20),
               gradient: LinearGradient(
                 colors: [
-                  const Color(0xFF3498DB).withOpacity(0.1),
-                  const Color(0xFF3498DB).withOpacity(0.05),
+                  const Color(0xFF3F51B5).withOpacity(0.1),
+                  const Color(0xFF3F51B5).withOpacity(0.05),
                 ],
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
@@ -326,109 +570,58 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                     width: 60,
                     height: 60,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3498DB),
-                      borderRadius: BorderRadius.circular(15),
+                      color: const Color(0xFF3F51B5),
+                      borderRadius: BorderRadius.circular(16),
                       boxShadow: [
                         BoxShadow(
-                          color: const Color(0xFF3498DB).withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
+                          color: const Color(0xFF3F51B5).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
                         ),
                       ],
                     ),
-                    child: const Icon(Icons.chat_bubble_outline_rounded, color: Colors.white, size: 30),
+                    child: const Icon(
+                        Icons.chat_bubble_outline_rounded,
+                        color: Colors.white,
+                        size: 30
+                    ),
                   ),
                   const SizedBox(width: 20),
                   const Expanded(
-                    child: Text(
-                      "Chat Inbox",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3498DB),
-                      ),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Chat Inbox",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF3F51B5),
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Communicate with your patients",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Color(0xFF3498DB),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Widget _buildScheduleCard() {
-    if (_currentDoctorId == null) {
-      return Container();
-    }
-    return Padding(
-      padding: const EdgeInsets.symmetric(horizontal: 24),
-      child: Card(
-        elevation: 5,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
-        child: InkWell(
-          onTap: () {
-            Navigator.push(
-              context,
-              MaterialPageRoute(
-                builder: (context) => DoctorScheduleScreen(
-                  doctorId: _currentDoctorId!,
-                  doctorDetails: _doctorDetails,
-                ),
-              ),
-            );
-          },
-          child: Container(
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(20),
-              gradient: LinearGradient(
-                colors: [
-                  const Color(0xFF3498DB).withOpacity(0.1),
-                  const Color(0xFF3498DB).withOpacity(0.05),
-                ],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              ),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.all(20),
-              child: Row(
-                children: [
                   Container(
-                    width: 60,
-                    height: 60,
+                    padding: const EdgeInsets.all(8),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF3498DB),
-                      borderRadius: BorderRadius.circular(15),
-                      boxShadow: [
-                        BoxShadow(
-                          color: const Color(0xFF3498DB).withOpacity(0.3),
-                          blurRadius: 10,
-                          offset: const Offset(0, 5),
-                        ),
-                      ],
+                      color: const Color(0xFF3F51B5).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
                     ),
-                    child: const Icon(Icons.calendar_today, color: Colors.white, size: 30),
-                  ),
-                  const SizedBox(width: 20),
-                  const Expanded(
-                    child: Text(
-                      "Today's Schedule",
-                      style: TextStyle(
-                        fontSize: 20,
-                        fontWeight: FontWeight.bold,
-                        color: Color(0xFF3498DB),
-                      ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Color(0xFF3F51B5),
+                      size: 16,
                     ),
-                  ),
-                  const Icon(
-                    Icons.arrow_forward_ios,
-                    color: Color(0xFF3498DB),
                   ),
                 ],
               ),

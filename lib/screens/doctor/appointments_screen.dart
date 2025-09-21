@@ -26,7 +26,7 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
   @override
   void initState() {
     super.initState();
-    _tabController = TabController(length: 3, vsync: this);
+    _tabController = TabController(length: 2, vsync: this);
     _fetchDoctorDetails();
   }
 
@@ -108,7 +108,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           unselectedLabelColor: Colors.grey,
           indicatorColor: const Color(0xFF2196F3),
           tabs: const [
-            Tab(icon: Icon(Icons.timelapse), text: 'In Progress'),
             Tab(icon: Icon(Icons.pending_actions), text: 'Pending'),
             Tab(icon: Icon(Icons.check_circle_outline), text: 'Completed'),
           ],
@@ -117,7 +116,6 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       body: TabBarView(
         controller: _tabController,
         children: [
-          _buildAppointmentsList(AppointmentStatus.inProgress),
           _buildAppointmentsList(AppointmentStatus.pending),
           _buildAppointmentsList(AppointmentStatus.completed),
         ],
