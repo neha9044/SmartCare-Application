@@ -1,23 +1,131 @@
 // doctor_profile_screen.dart
-
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
-import 'package:smartcare_app/services/auth_service.dart'; // Import AuthService
+import 'package:smartcare_app/services/auth_service.dart';
 
-class DoctorProfileScreen extends StatelessWidget {
+class DoctorProfileScreen extends StatefulWidget {
   final String doctorId;
-  final AuthService _authService = AuthService();
 
-  DoctorProfileScreen({Key? key, required this.doctorId}) : super(key: key);
+  const DoctorProfileScreen({Key? key, required this.doctorId}) : super(key: key);
+
+  @override
+  _DoctorProfileScreenState createState() => _DoctorProfileScreenState();
+}
+
+class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
+  final AuthService _authService = AuthService();
+  List<String> _timeSlots = [];
+  bool _isLoading = true;
+
+  final Color primaryBlue = const Color(0xFF2196F3);
+  final Color darkBlue = const Color(0xFF1976D2);
+  final Color backgroundColor = const Color(0xFFF5F7FA);
+
+  @override
+  void initState() {
+    super.initState();
+    _fetchDoctorData();
+  }
+
+  Future<void> _fetchDoctorData() async {
+    try {
+      final docSnapshot = await FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).get();
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data() as Map<String, dynamic>;
+        setState(() {
+          _timeSlots = List<String>.from(data['availableSlots'] ?? []);
+          _isLoading = false;
+        });
+      }
+    } catch (e) {
+      print("Error fetching doctor data: $e");
+      setState(() {
+        _isLoading = false;
+      });
+    }
+  }
+
+  Future<void> _saveTimeSlots() async {
+    try {
+      await FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).update({
+        'availableSlots': _timeSlots,
+      });
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Time slots saved successfully!')),
+      );
+    } catch (e) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Failed to save time slots.')),
+      );
+    }
+  }
+
+  void _editTimeSlotsDialog() {
+    TextEditingController controller = TextEditingController();
+    showDialog(
+      context: context,
+      builder: (BuildContext context) {
+        return AlertDialog(
+          title: const Text("Edit Time Slots"),
+          content: SingleChildScrollView(
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Wrap(
+                  spacing: 8.0,
+                  children: _timeSlots.map((slot) {
+                    return Chip(
+                      label: Text(slot),
+                      onDeleted: () {
+                        setState(() {
+                          _timeSlots.remove(slot);
+                        });
+                        Navigator.of(context).pop();
+                        _editTimeSlotsDialog();
+                      },
+                    );
+                  }).toList(),
+                ),
+                TextField(
+                  controller: controller,
+                  decoration: const InputDecoration(labelText: "New Time Slot (e.g., 10:00 AM)"),
+                ),
+              ],
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () {
+                Navigator.of(context).pop();
+              },
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () {
+                if (controller.text.isNotEmpty && !_timeSlots.contains(controller.text)) {
+                  setState(() {
+                    _timeSlots.add(controller.text);
+                  });
+                  _saveTimeSlots();
+                  Navigator.of(context).pop();
+                }
+              },
+              child: const Text('Add & Save'),
+            ),
+          ],
+        );
+      },
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFFF5F7FA),
+      backgroundColor: backgroundColor,
       body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('doctors').doc(doctorId).get(),
+        future: FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).get(),
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting) {
+          if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
             return const Center(child: CircularProgressIndicator());
           }
           if (snapshot.hasError) {
@@ -47,13 +155,13 @@ class DoctorProfileScreen extends StatelessWidget {
                 floating: true,
                 pinned: true,
                 elevation: 0,
-                backgroundColor: const Color(0xFF2196F3),
+                backgroundColor: primaryBlue,
                 flexibleSpace: FlexibleSpaceBar(
                   centerTitle: true,
                   background: Stack(
                     fit: StackFit.expand,
                     children: [
-                      Container(color: const Color(0xFF2196F3)),
+                      Container(color: primaryBlue),
                       Padding(
                         padding: const EdgeInsets.symmetric(horizontal: 20.0, vertical: 40.0),
                         child: Column(
@@ -66,7 +174,7 @@ class DoctorProfileScreen extends StatelessWidget {
                                   ? NetworkImage(profileImageUrl)
                                   : null,
                               child: profileImageUrl.isEmpty
-                                  ? Icon(Icons.person, size: 50, color: const Color(0xFF2196F3))
+                                  ? Icon(Icons.person, size: 50, color: primaryBlue)
                                   : null,
                             ),
                             const SizedBox(height: 12),
@@ -112,14 +220,14 @@ class DoctorProfileScreen extends StatelessWidget {
                       _buildInfoCard(icon: Icons.local_hospital, label: "Clinic Name", value: clinicName),
                       _buildInfoCard(icon: Icons.location_on, label: "Location", value: location),
                       _buildInfoCard(icon: Icons.attach_money, label: "Consultation Fees", value: consultationFees),
+                      const SizedBox(height: 20),
+                      _buildTimeSlotsSection(), // New time slots section
                       const SizedBox(height: 30),
-                      // Logout Button
                       SizedBox(
                         width: double.infinity,
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             await _authService.signOut();
-                            // Explicitly navigate to the login page and clear the stack
                             Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
                           },
                           icon: const Icon(Icons.logout, color: Colors.white),
@@ -140,6 +248,32 @@ class DoctorProfileScreen extends StatelessWidget {
           );
         },
       ),
+    );
+  }
+
+  Widget _buildTimeSlotsSection() {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            _buildSectionTitle("Available Slots"),
+            ElevatedButton(
+              onPressed: _editTimeSlotsDialog,
+              child: const Text('Edit Slots'),
+            ),
+          ],
+        ),
+        const SizedBox(height: 10),
+        _timeSlots.isEmpty
+            ? const Text('No time slots available.', style: TextStyle(fontStyle: FontStyle.italic))
+            : Wrap(
+          spacing: 8.0,
+          runSpacing: 8.0,
+          children: _timeSlots.map((slot) => Chip(label: Text(slot))).toList(),
+        ),
+      ],
     );
   }
 
@@ -167,7 +301,7 @@ class DoctorProfileScreen extends StatelessWidget {
       shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
       margin: const EdgeInsets.symmetric(vertical: 8),
       child: ListTile(
-        leading: Icon(icon, color: const Color(0xFF2196F3)),
+        leading: Icon(icon, color: primaryBlue),
         title: Text(
           label,
           style: const TextStyle(fontWeight: FontWeight.bold),

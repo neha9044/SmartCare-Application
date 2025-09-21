@@ -1,4 +1,4 @@
-// lib/screens/patient/book_appointment_screen.dart
+// book_appointment_screen.dart
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/models/doctor.dart';
 import 'package:smartcare_app/constants/colors.dart';
@@ -22,6 +22,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   String? _selectedTimeSlot;
   DateTime _currentMonth = DateTime.now();
 
+  List<String> _availableSlots = []; // New variable to hold fetched slots
+
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color lightBlue = const Color(0xFFE3F2FD);
   final Color darkBlue = const Color(0xFF1976D2);
@@ -31,6 +33,25 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   void initState() {
     super.initState();
     _currentMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
+    _fetchDoctorTimeSlots(); // Fetch slots when the screen initializes
+  }
+
+  Future<void> _fetchDoctorTimeSlots() async {
+    try {
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(widget.doctor.id)
+          .get();
+
+      if (docSnapshot.exists) {
+        final data = docSnapshot.data() as Map<String, dynamic>;
+        setState(() {
+          _availableSlots = List<String>.from(data['availableSlots'] ?? []);
+        });
+      }
+    } catch (e) {
+      print("Error fetching time slots: $e");
+    }
   }
 
   @override
@@ -275,10 +296,12 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: Wrap(
+                      child: _availableSlots.isEmpty
+                          ? const Center(child: Text('No slots available.', style: TextStyle(fontStyle: FontStyle.italic)))
+                          : Wrap(
                         spacing: 8.0,
                         runSpacing: 8.0,
-                        children: widget.doctor.availableSlots.map((slot) {
+                        children: _availableSlots.map((slot) { // Use the fetched slots
                           bool isSelected = _selectedTimeSlot == slot;
                           return GestureDetector(
                             onTap: () {

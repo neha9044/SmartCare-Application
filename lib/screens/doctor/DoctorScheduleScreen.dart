@@ -47,6 +47,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
         .where('doctorId', isEqualTo: widget.doctorId)
         .where('date', isGreaterThanOrEqualTo: Timestamp.fromDate(startOfDay))
         .where('date', isLessThan: Timestamp.fromDate(endOfDay))
+        .where('status', isNotEqualTo: AppointmentStatus.completed.toShortString()) // Added
         .get();
 
     _selectedAppointments.value = querySnapshot.docs;
@@ -68,6 +69,10 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
           .collection('appointments')
           .doc(docId)
           .update({'status': newStatus.toShortString()});
+
+      // Refetch appointments after updating the status to refresh the UI
+      await _getAppointmentsForDay(_selectedDay!);
+
       ScaffoldMessenger.of(context).showSnackBar(
         SnackBar(content: Text('Appointment status updated to ${newStatus.toShortString()}')),
       );

@@ -13,6 +13,7 @@ import 'package:geocoding/geocoding.dart';
 import 'package:smartcare_app/services/location_service.dart';
 import 'book_appointment_screen.dart';
 import 'more_specialties_screen.dart';
+import 'chatbot_screen.dart'; // <-- New import for the chatbot screen
 
 // Placeholder for AppColors with a red color constant
 class AppColors {
@@ -590,9 +591,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       Icons.chat_bubble_outline_rounded,
                       const Color(0xFFFF6B9D),
                           () {
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('Chatbot coming soon!')),
+                        // START OF CHATBOT INTEGRATION
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                              builder: (_) => const ChatbotScreen()),
                         );
+                        // END OF CHATBOT INTEGRATION
                       },
                     ),
                     const SizedBox(height: 12),
