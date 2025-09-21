@@ -32,13 +32,6 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   // A list of form fields for dynamic medicine entries
   List<Map<String, TextEditingController>> _medicineEntries = [];
 
-  // Dummy list of medicines for Autocomplete
-  static const List<String> _medicineList = [
-    'Paracetamol', 'Ibuprofen', 'Amoxicillin', 'Aspirin', 'Metformin',
-    'Lisinopril', 'Levothyroxine', 'Atorvastatin', 'Amlodipine', 'Omeprazole',
-    'Azithromycin', 'Ciprofloxacin', 'Doxycycline', 'Cetirizine', 'Loratadine',
-  ];
-
   @override
   void initState() {
     super.initState();
@@ -131,190 +124,329 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
   @override
   Widget build(BuildContext context) {
-    return SingleChildScrollView(
-      padding: const EdgeInsets.all(16),
-      child: Card(
-        elevation: 4,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
-        child: Padding(
-          padding: const EdgeInsets.all(16.0),
-          child: Form(
-            key: _formKey,
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
-              children: [
-                // Doctor's details section
-                Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      widget.doctorDetails['specialty'] ?? "APOLLO DOCTOR",
-                      style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 18, color: Color(0xFF2C3E50)),
+    return Scaffold(
+      backgroundColor: Colors.grey[50],
+      body: SafeArea(
+        child: Column(
+          children: [
+            // Simple Patient Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.symmetric(horizontal: 16.0, vertical: 12.0),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                boxShadow: [
+                  BoxShadow(
+                    color: Colors.grey.shade200,
+                    blurRadius: 4,
+                    offset: const Offset(0, 2),
+                  ),
+                ],
+              ),
+              child: Row(
+                children: [
+                  const Icon(Icons.person, color: Color(0xFF1E88E5), size: 24),
+                  const SizedBox(width: 12),
+                  Text(
+                    widget.patientName,
+                    style: const TextStyle(
+                      fontSize: 20,
+                      fontWeight: FontWeight.w600,
+                      color: Color(0xFF2E3A59),
                     ),
-                    Text(widget.doctorDetails['name'] ?? "Dr. Alex Chen", style: const TextStyle(color: Color(0xFF34495E))),
-                    const SizedBox(height: 8),
-                    Text(
-                      widget.doctorDetails['address'] ?? "123 Anywhere St., Any City",
-                      style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
-                    ),
-                  ],
-                ),
-                const Divider(height: 30, thickness: 1.5, color: Color(0xFFBDC3C7)),
-
-                // Patient and date details
-                TextFormField(
-                  controller: _patientNameController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: "Patient's Name",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
                   ),
-                ),
-                const SizedBox(height: 10),
-                TextFormField(
-                  controller: _dateController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: "Date",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                  ),
-                ),
-                const SizedBox(height: 20),
-
-                // Diagnosis field
-                TextFormField(
-                  controller: _diagnosisController,
-                  decoration: const InputDecoration(
-                    labelText: "Diagnosis / Clinical Notes",
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                  ),
-                  maxLines: null,
-                ),
-                const SizedBox(height: 20),
-
-                // Dynamic Medicine fields
-                const Text("Medication", style: TextStyle(fontSize: 18, fontWeight: FontWeight.bold)),
-                const SizedBox(height: 10),
-                ..._medicineEntries.asMap().entries.map((entry) {
-                  int index = entry.key;
-                  Map<String, TextEditingController> controllers = entry.value;
-                  return _buildMedicineForm(index, controllers);
-                }).toList(),
-
-                const SizedBox(height: 10),
-                ElevatedButton.icon(
-                  onPressed: _addMedicineEntry,
-                  icon: const Icon(Icons.add),
-                  label: const Text('Add Medicine'),
-                  style: ElevatedButton.styleFrom(
-                    foregroundColor: Colors.white, backgroundColor: Colors.blue,
-                  ),
-                ),
-                const Divider(height: 30, thickness: 1.5, color: Color(0xFFBDC3C7)),
-
-                // Follow-up Date field
-                TextFormField(
-                  controller: _followUpDateController,
-                  readOnly: true,
-                  decoration: const InputDecoration(
-                    labelText: "Follow-up Date / Next Visit",
-                    suffixIcon: Icon(Icons.calendar_today),
-                    border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                  ),
-                  onTap: () => _selectFollowUpDate(context),
-                ),
-                const SizedBox(height: 20),
-
-                // Save button
-                ElevatedButton(
-                  onPressed: _savePrescription,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: const Color(0xFF2196F3),
-                    foregroundColor: Colors.white,
-                    padding: const EdgeInsets.symmetric(vertical: 16),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-                  ),
-                  child: const Text("Save Prescription", style: TextStyle(fontWeight: FontWeight.bold)),
-                ),
-              ],
+                ],
+              ),
             ),
-          ),
+
+            // Main Content
+            Expanded(
+              child: Form(
+                key: _formKey,
+                child: Padding(
+                  padding: const EdgeInsets.all(16.0),
+                  child: Column(
+                    children: [
+                      // Date & Diagnosis Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildCompactTextField(
+                              controller: _dateController,
+                              label: "Date",
+                              readOnly: true,
+                              prefixIcon: Icons.calendar_today,
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          Expanded(
+                            flex: 2,
+                            child: _buildCompactTextField(
+                              controller: _diagnosisController,
+                              label: "Diagnosis / Clinical Notes",
+                              prefixIcon: Icons.medical_services,
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Medicines Section
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                        children: [
+                          const Text(
+                            "Medications",
+                            style: TextStyle(
+                              fontSize: 16,
+                              fontWeight: FontWeight.w600,
+                              color: Color(0xFF2E3A59),
+                            ),
+                          ),
+                          TextButton.icon(
+                            onPressed: _addMedicineEntry,
+                            icon: const Icon(Icons.add_circle_outline, size: 18),
+                            label: const Text("Add", style: TextStyle(fontSize: 12)),
+                            style: TextButton.styleFrom(
+                              foregroundColor: const Color(0xFF1E88E5),
+                              padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                            ),
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 8),
+
+                      // Medicines List - Scrollable
+                      Expanded(
+                        flex: 4,
+                        child: Container(
+                          decoration: BoxDecoration(
+                            color: Colors.white,
+                            borderRadius: BorderRadius.circular(12),
+                            border: Border.all(color: Colors.grey.shade200),
+                          ),
+                          child: _medicineEntries.isEmpty
+                              ? const Center(
+                            child: Text(
+                              "No medications added",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
+                              : ListView.builder(
+                            padding: const EdgeInsets.all(8),
+                            itemCount: _medicineEntries.length,
+                            itemBuilder: (context, index) => _buildCompactMedicineForm(index),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(height: 16),
+
+                      // Follow-up Date & Save Button Row
+                      Row(
+                        children: [
+                          Expanded(
+                            child: _buildCompactTextField(
+                              controller: _followUpDateController,
+                              label: "Next Visit",
+                              readOnly: true,
+                              prefixIcon: Icons.event,
+                              onTap: () => _selectFollowUpDate(context),
+                            ),
+                          ),
+                          const SizedBox(width: 12),
+                          // Save Button - Inline
+                          Expanded(
+                            child: ElevatedButton.icon(
+                              onPressed: _savePrescription,
+                              icon: const Icon(Icons.save, size: 20),
+                              label: const Text("Save Prescription"),
+                              style: ElevatedButton.styleFrom(
+                                backgroundColor: const Color(0xFF4CAF50),
+                                foregroundColor: Colors.white,
+                                padding: const EdgeInsets.symmetric(vertical: 16),
+                                shape: RoundedRectangleBorder(
+                                  borderRadius: BorderRadius.circular(12),
+                                ),
+                                elevation: 3,
+                              ),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+            ),
+          ],
         ),
       ),
     );
   }
 
-  Widget _buildMedicineForm(int index, Map<String, TextEditingController> controllers) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 15),
+  Widget _buildCompactTextField({
+    required TextEditingController controller,
+    required String label,
+    IconData? prefixIcon,
+    bool readOnly = false,
+    int maxLines = 1,
+    VoidCallback? onTap,
+    String? Function(String?)? validator,
+  }) {
+    return TextFormField(
+      controller: controller,
+      readOnly: readOnly,
+      maxLines: maxLines,
+      onTap: onTap,
+      validator: validator,
+      style: const TextStyle(fontSize: 14),
+      decoration: InputDecoration(
+        labelText: label,
+        labelStyle: const TextStyle(fontSize: 12),
+        prefixIcon: prefixIcon != null
+            ? Icon(prefixIcon, size: 18, color: const Color(0xFF1E88E5))
+            : null,
+        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        border: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        enabledBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: BorderSide(color: Colors.grey.shade300),
+        ),
+        focusedBorder: OutlineInputBorder(
+          borderRadius: BorderRadius.circular(10),
+          borderSide: const BorderSide(color: Color(0xFF1E88E5), width: 2),
+        ),
+        filled: true,
+        fillColor: readOnly ? Colors.grey.shade50 : Colors.white,
+      ),
+    );
+  }
+
+  Widget _buildCompactMedicineForm(int index) {
+    final controllers = _medicineEntries[index];
+
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: Colors.grey.shade50,
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.grey.shade200),
+      ),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
+          // Medicine Name & Remove Button
           Row(
             children: [
               Expanded(
-                child: Autocomplete<String>(
-                  fieldViewBuilder: (context, textEditingController, focusNode, onFieldSubmitted) {
-                    controllers['medicineName'] = textEditingController; // Assign controller
-                    return TextFormField(
-                      controller: textEditingController,
-                      focusNode: focusNode,
-                      // The fix: calling onFieldSubmitted() without arguments
-                      onFieldSubmitted: (String value) {
-                        onFieldSubmitted();
-                      },
-                      decoration: const InputDecoration(
-                        labelText: 'Medicine Name',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-                      ),
-                      validator: (v) => v!.isEmpty ? "Enter medicine" : null,
-                    );
-                  },
-                  optionsBuilder: (TextEditingValue textEditingValue) {
-                    if (textEditingValue.text == '') {
-                      return const Iterable<String>.empty();
-                    }
-                    return _medicineList.where((String option) {
-                      return option.toLowerCase().contains(textEditingValue.text.toLowerCase());
-                    });
-                  },
+                child: TextFormField(
+                  controller: controllers['medicineName'],
+                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  decoration: InputDecoration(
+                    labelText: 'Medicine Name',
+                    labelStyle: const TextStyle(fontSize: 11),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  validator: (v) => v!.isEmpty ? "Enter medicine" : null,
                 ),
               ),
-              if (_medicineEntries.length > 1)
+              if (_medicineEntries.length > 1) ...[
+                const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.close, color: Colors.red),
+                  icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
                   onPressed: () => _removeMedicineEntry(index),
+                  padding: EdgeInsets.zero,
+                  constraints: const BoxConstraints(),
                 ),
+              ],
             ],
           ),
-          const SizedBox(height: 10),
-          TextFormField(
-            controller: controllers['dosageAndFrequency'],
-            decoration: const InputDecoration(
-              labelText: "Dosage & Frequency (e.g., 500mg, twice daily)",
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-            ),
-            validator: (v) => v!.isEmpty ? "Enter dosage" : null,
+          const SizedBox(height: 8),
+
+          // Dosage, Duration & Instructions in a grid layout
+          Row(
+            children: [
+              Expanded(
+                child: TextFormField(
+                  controller: controllers['dosageAndFrequency'],
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'Dosage',
+                    hintText: '500mg, 2x daily',
+                    labelStyle: const TextStyle(fontSize: 10),
+                    hintStyle: const TextStyle(fontSize: 10),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  validator: (v) => v!.isEmpty ? "Enter dosage" : null,
+                ),
+              ),
+              const SizedBox(width: 8),
+              Expanded(
+                child: TextFormField(
+                  controller: controllers['duration'],
+                  style: const TextStyle(fontSize: 12),
+                  decoration: InputDecoration(
+                    labelText: 'Duration',
+                    hintText: '7 days',
+                    labelStyle: const TextStyle(fontSize: 10),
+                    hintStyle: const TextStyle(fontSize: 10),
+                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    border: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                    enabledBorder: OutlineInputBorder(
+                      borderRadius: BorderRadius.circular(8),
+                      borderSide: BorderSide(color: Colors.grey.shade300),
+                    ),
+                  ),
+                  validator: (v) => v!.isEmpty ? "Enter duration" : null,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 10),
-          TextFormField(
-            controller: controllers['duration'],
-            decoration: const InputDecoration(
-              labelText: "Duration (e.g., 7 days)",
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
-            ),
-            validator: (v) => v!.isEmpty ? "Enter duration" : null,
-          ),
-          const SizedBox(height: 10),
+          const SizedBox(height: 8),
+
+          // Special Instructions
           TextFormField(
             controller: controllers['specialInstructions'],
-            decoration: const InputDecoration(
-              labelText: "Special Instructions",
-              border: OutlineInputBorder(borderRadius: BorderRadius.all(Radius.circular(10))),
+            style: const TextStyle(fontSize: 12),
+            decoration: InputDecoration(
+              labelText: 'Special Instructions',
+              hintText: 'After meals, with water',
+              labelStyle: const TextStyle(fontSize: 10),
+              hintStyle: const TextStyle(fontSize: 10),
+              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(8),
+                borderSide: BorderSide(color: Colors.grey.shade300),
+              ),
             ),
-            maxLines: null,
+            maxLines: 2,
           ),
-          const SizedBox(height: 15),
         ],
       ),
     );
