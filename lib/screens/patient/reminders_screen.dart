@@ -109,8 +109,19 @@ class _RemindersScreenState extends State<RemindersScreen> {
     for (var doc in appointmentsQuery.docs) {
       final data = doc.data();
       final String doctorName = data['doctorName'] ?? 'N/A';
-      final String date = data['date'] ?? 'N/A';
+      final dynamic dateField = data['date'];
       final String time = data['time'] ?? 'N/A';
+
+      String date;
+      if (dateField is Timestamp) {
+        final DateTime dt = dateField.toDate();
+        date = '${dt.day}/${dt.month}/${dt.year}';
+      } else if (dateField is String) {
+        date = dateField;
+      } else {
+        date = 'N/A';
+      }
+
       reminders.add('Your appointment with $doctorName is on $date at $time.');
     }
 

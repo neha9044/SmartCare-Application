@@ -297,16 +297,16 @@ class DoctorProfileScreen extends StatelessWidget {
                       const SizedBox(width: 8),
                       Expanded(
                         child: _buildActionButton(
-                          onPressed: doctor.isAvailableToday ? () {
+                          onPressed: () { // FIX: Removed doctor.isAvailableToday check
                             Navigator.push(
                               context,
                               MaterialPageRoute(
                                 builder: (context) => BookAppointmentScreen(doctor: doctor),
                               ),
                             );
-                          } : null,
+                          },
                           icon: Icons.calendar_today,
-                          label: doctor.isAvailableToday ? 'Book' : 'N/A',
+                          label: 'Book', // FIX: Always 'Book'
                           isPrimary: true,
                         ),
                       ),

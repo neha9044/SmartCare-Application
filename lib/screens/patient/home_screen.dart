@@ -12,8 +12,9 @@ import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:smartcare_app/services/location_service.dart';
 import 'book_appointment_screen.dart';
-import 'more_specialties_screen.dart';
-import 'chatbot_screen.dart'; // <-- New import for the chatbot screen
+import 'more_specialties_screen.dart'; // <--- Essential Import
+import 'chatbot_screen.dart';
+import 'pdf_summarization_screen.dart'; // <-- NEW IMPORT FOR PDF SUMMARIZER
 
 // Placeholder for AppColors with a red color constant
 class AppColors {
@@ -355,12 +356,14 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         reviewCount: data['reviewCount'] ?? 0,
         experience: data['experience'] ?? 'N/A',
         imageUrl: data['profileImage'] ?? '',
-        availableSlots: (data['availableSlots'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ??
-            ['9:00 AM', '10:00 AM', '11:00 AM'],
+        // FIX: Fetch the new availableSlots map for the schedule
+        availableSchedule: (data['availableSlots'] is Map<String, dynamic>
+            ? (data['availableSlots'] as Map<String, dynamic>).map(
+              (k, v) => MapEntry(k, List<String>.from(v)),
+        )
+            : {}),
         consultationFee: (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
-        isAvailableToday: data['isAvailableToday'] ?? true,
+        isAvailableToday: true, // FIX: Always enable as per user request
         about: data['about'] ?? 'Experienced medical professional.',
         qualifications: (data['qualification'] as String?)
             ?.split(',')
@@ -514,6 +517,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       children: [
                         const SizedBox(height: 20),
                         _buildSearchSection(),
+                        const SizedBox(height: 20), // ADDED SPACING
+                        _buildSummarizerCard(), // <-- NEW CARD CALL
                         const SizedBox(height: 32),
                         _buildSpecialtiesSection(),
                         const SizedBox(height: 32),
@@ -753,6 +758,79 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
+  // NEW WIDGET: The Card for the PDF Summarizer Feature
+  Widget _buildSummarizerCard() {
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: GestureDetector(
+        onTap: () {
+          Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const PdfSummarizationScreen(),
+            ),
+          );
+        },
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: lightBlue, // Light Blue background
+            borderRadius: BorderRadius.circular(20),
+            boxShadow: [
+              BoxShadow(
+                color: primaryBlue.withOpacity(0.1),
+                blurRadius: 10,
+                offset: const Offset(0, 5),
+              ),
+            ],
+            border: Border.all(color: primaryBlue.withOpacity(0.4), width: 1),
+          ),
+          child: Row(
+            children: [
+              Icon(
+                Icons.summarize_rounded,
+                color: darkBlue,
+                size: 30,
+              ),
+              const SizedBox(width: 12),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      'Summarize Your Report',
+                      style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.bold,
+                        color: darkBlue,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      'Simplify complex medical PDF reports instantly.',
+                      style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.grey[700],
+                      ),
+                      maxLines: 2,
+                      overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              Icon(
+                Icons.arrow_forward_ios_rounded,
+                color: darkBlue,
+                size: 16,
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+  // END NEW WIDGET
 
   Widget _buildSpecialtiesSection() {
     final displaySpecialties = _specializations.take(5).toList();
@@ -1171,7 +1249,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                   SizedBox(
                     height: 40,
                     child: ElevatedButton(
-                      onPressed: () {
+                      onPressed: () { // Button is always enabled
                         Navigator.push(
                           context,
                           MaterialPageRoute(

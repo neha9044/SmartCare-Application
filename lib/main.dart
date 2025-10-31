@@ -1,7 +1,8 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-import 'package:firebase_auth/firebase_auth.dart';
+// FIX: Imported Firebase Auth using a prefix to resolve the User conflict
+import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/screens/splash_screen.dart';
@@ -10,7 +11,7 @@ import 'package:smartcare_app/screens/login_screen.dart';
 import 'package:smartcare_app/screens/patient/patient_dashboard.dart';
 import 'package:smartcare_app/screens/doctor/doctor_dashboard.dart';
 import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart';
-import 'package:smartcare_app/screens/pharmacy/pharmacy_dashboard.dart'; // Add this import
+import 'package:smartcare_app/screens/pharmacy/pharmacy_dashboard.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -59,7 +60,7 @@ class SmartCareApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/patient-dashboard': (context) => const PatientDashboard(),
         '/doctor-dashboard': (context) => const DoctorDashboard(),
-        '/pharmacy-dashboard': (context) => const PharmacyDashboard(), // FIX: Change this line
+        '/pharmacy-dashboard': (context) => const PharmacyDashboard(),
       },
     );
   }
@@ -68,8 +69,8 @@ class SmartCareApp extends StatelessWidget {
 class AuthWrapper extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<User?>(
-      stream: FirebaseAuth.instance.authStateChanges(),
+    return StreamBuilder<firebase_auth.User?>( // FIX: Use prefixed User
+      stream: firebase_auth.FirebaseAuth.instance.authStateChanges(), // FIX: Use prefixed FirebaseAuth
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
           return SplashScreen();
@@ -121,11 +122,11 @@ class AuthWrapper extends StatelessWidget {
                         return const Center(child: Text('Error fetching pharmacy data.'));
                       }
                       if (pharmacySnapshot.hasData && pharmacySnapshot.data!.exists) {
-                        return const PharmacyDashboard(); // FIX: Change this line
+                        return const PharmacyDashboard();
                       }
 
                       // User is logged in but their document doesn't exist, log them out.
-                      FirebaseAuth.instance.signOut();
+                      firebase_auth.FirebaseAuth.instance.signOut(); // FIX: Use prefixed FirebaseAuth
                       return LoginScreen();
                     },
                   );

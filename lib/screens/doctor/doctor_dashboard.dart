@@ -13,6 +13,8 @@ import 'package:smartcare_app/screens/doctor/DoctorScheduleScreen.dart';
 import 'package:geolocator/geolocator.dart';
 import 'package:geocoding/geocoding.dart';
 import 'package:smartcare_app/services/location_service.dart';
+// NEW IMPORT
+import 'package:smartcare_app/screens/doctor/DoctorScheduleSettingScreen.dart';
 
 class DoctorDashboard extends StatefulWidget {
   const DoctorDashboard({Key? key}) : super(key: key);
@@ -164,6 +166,8 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         const SizedBox(height: 32),
+                        _buildSetAvailabilityCard(), // NEW CARD
+                        const SizedBox(height: 16),
                         _buildScheduleCard(),
                         const SizedBox(height: 16),
                         _buildQueueManagementCard(),
@@ -326,6 +330,110 @@ class _DoctorDashboardState extends State<DoctorDashboard>
           ),
         ),
       ],
+    );
+  }
+
+  // NEW: Set Availability Card
+  Widget _buildSetAvailabilityCard() {
+    if (_currentDoctorId == null) {
+      return Container();
+    }
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Card(
+        elevation: 6,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        child: InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (context) => DoctorScheduleSettingScreen( // Navigate to new screen
+                  doctorId: _currentDoctorId!,
+                ),
+              ),
+            );
+          },
+          borderRadius: BorderRadius.circular(20),
+          child: Container(
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(20),
+              gradient: LinearGradient(
+                colors: [
+                  const Color(0xFF9C27B0).withOpacity(0.1), // Purple gradient for new card
+                  const Color(0xFF9C27B0).withOpacity(0.05),
+                ],
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+              ),
+            ),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Row(
+                children: [
+                  Container(
+                    width: 60,
+                    height: 60,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9C27B0), // Purple color
+                      borderRadius: BorderRadius.circular(16),
+                      boxShadow: [
+                        BoxShadow(
+                          color: const Color(0xFF9C27B0).withOpacity(0.3),
+                          blurRadius: 12,
+                          offset: const Offset(0, 6),
+                        ),
+                      ],
+                    ),
+                    child: const Icon(
+                        Icons.settings_suggest_rounded, // Relevant icon
+                        color: Colors.white,
+                        size: 30
+                    ),
+                  ),
+                  const SizedBox(width: 20),
+                  const Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          "Set Availability",
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.bold,
+                            color: Color(0xFF9C27B0), // Purple color
+                          ),
+                        ),
+                        SizedBox(height: 4),
+                        Text(
+                          "Manage your daily slots and holidays for booking",
+                          style: TextStyle(
+                            fontSize: 13,
+                            color: Colors.grey,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFF9C27B0).withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(
+                      Icons.arrow_forward_ios_rounded,
+                      color: Color(0xFF9C27B0),
+                      size: 16,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 

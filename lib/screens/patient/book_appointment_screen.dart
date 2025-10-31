@@ -23,7 +23,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   String? _selectedTimeSlot;
   DateTime _currentMonth = DateTime.now();
 
-  List<String> _availableSlots = []; // New variable to hold fetched slots
+  // FIX: New variables to hold the fetched schedule map and current day's slots
+  Map<String, List<String>> _doctorSchedule = {}; // Key: DayName, Value: List of time ranges
+  List<String> _currentDaySlots = []; // Slots for the currently selected date
 
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color lightBlue = const Color(0xFFE3F2FD);
@@ -34,44 +36,20 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   void initState() {
     super.initState();
     _currentMonth = DateTime(_selectedDate.year, _selectedDate.month, 1);
-    _fetchDoctorTimeSlots(); // Fetch slots when the screen initializes
+    // Fetch schedule and then update slots for the initially selected date
+    _fetchDoctorSchedule().then((_) {
+      _updateCurrentDaySlots(_selectedDate);
+    });
   }
 
-  // New helper function to expand time slots
-  List<String> _expandTimeSlots(List<String> timeRanges) {
-    List<String> expandedSlots = [];
-    final format = DateFormat("hh:mm a");
-
-    for (String range in timeRanges) {
-      if (range.contains(' - ')) {
-        final parts = range.split(' - ');
-        if (parts.length == 2) {
-          try {
-            DateTime start = format.parse(parts[0]);
-            DateTime end = format.parse(parts[1]);
-
-            // Add slots until the hour before the end time
-            while (start.isBefore(end)) {
-              expandedSlots.add(format.format(start));
-              start = start.add(const Duration(hours: 1));
-            }
-            // Add the end time itself
-            expandedSlots.add(format.format(end));
-          } catch (e) {
-            print('Error parsing time range: $e');
-            // If parsing fails, just add the original string as a fallback
-            expandedSlots.add(range);
-          }
-        }
-      } else {
-        // If the slot is not a range, add it directly
-        expandedSlots.add(range);
-      }
-    }
-    return expandedSlots;
+  // Helper to get day name from DateTime
+  String _getDayName(DateTime date) {
+    // DateFormat('EEEE') gives the full day name, e.g., 'Monday'
+    return DateFormat('EEEE').format(date);
   }
 
-  Future<void> _fetchDoctorTimeSlots() async {
+  // FIX: Refactored to fetch the schedule map
+  Future<void> _fetchDoctorSchedule() async {
     try {
       final docSnapshot = await FirebaseFirestore.instance
           .collection('doctors')
@@ -80,15 +58,108 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
       if (docSnapshot.exists) {
         final data = docSnapshot.data() as Map<String, dynamic>;
-        final List<String> fetchedRanges = List<String>.from(data['availableSlots'] ?? []);
-        setState(() {
-          _availableSlots = _expandTimeSlots(fetchedRanges);
-        });
+        final dynamic fetchedSchedule = data['availableSlots']; // New field name
+
+        if (fetchedSchedule is Map<String, dynamic>) {
+          final Map<String, List<String>> newSchedule = fetchedSchedule.map(
+                (key, value) => MapEntry(key, List<String>.from(value)),
+          );
+          setState(() {
+            _doctorSchedule = newSchedule;
+          });
+        }
       }
     } catch (e) {
-      print("Error fetching time slots: $e");
+      print("Error fetching doctor schedule: $e");
     }
   }
+
+  // FIX: New logic to update slots based on the selected day
+  void _updateCurrentDaySlots(DateTime day) {
+    final dayName = _getDayName(day);
+    // Check if the date is in the past
+    final isPastDate = day.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+
+    if (isPastDate) {
+      setState(() {
+        _currentDaySlots = [];
+        _selectedTimeSlot = null;
+      });
+      return;
+    }
+
+    // Get the time ranges for the selected day from the fetched schedule map
+    final List<String> timeRanges = _doctorSchedule[dayName] ?? [];
+
+    // Expand the ranges to hourly slots
+    final expandedSlots = _expandTimeSlots(timeRanges, day);
+
+    setState(() {
+      _currentDaySlots = expandedSlots.toList();
+      _selectedTimeSlot = null; // Reset selected slot when day changes
+    });
+  }
+
+  // FIX: Refined helper function to expand time slots
+  List<String> _expandTimeSlots(List<String> timeRanges, DateTime appointmentDate) {
+    List<String> expandedSlots = [];
+    final format = DateFormat("h:mm a");
+    final isToday = _isSameDay(appointmentDate, DateTime.now());
+
+    for (String range in timeRanges) {
+      if (range.contains(' - ')) {
+        final parts = range.split(' - ');
+        if (parts.length == 2) {
+          try {
+            // Parse time strings into DateTime objects (at epoch start date)
+            DateTime start = format.parse(parts[0]);
+            DateTime end = format.parse(parts[1]);
+
+            // Project the parsed time components onto the selected appointment date
+            DateTime startTime = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day, start.hour, start.minute);
+            DateTime endTime = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day, end.hour, end.minute);
+
+            // Handle overnight case (if any, though unlikely for doctor schedule)
+            if (endTime.isBefore(startTime)) {
+              endTime = endTime.add(const Duration(days: 1));
+            }
+
+            // Generate hourly slots
+            DateTime currentSlot = startTime;
+            while (currentSlot.isBefore(endTime)) {
+              // Only add slots that are in the future for today's date
+              if (!isToday || currentSlot.isAfter(DateTime.now().subtract(const Duration(minutes: 1)))) {
+                expandedSlots.add(format.format(currentSlot));
+              }
+              currentSlot = currentSlot.add(const Duration(hours: 1));
+            }
+            // Add the end time if it's not a past time for today
+            if (currentSlot.isAtSameMomentAs(endTime) && (!isToday || endTime.isAfter(DateTime.now().subtract(const Duration(minutes: 1))))) {
+              expandedSlots.add(format.format(endTime));
+            }
+
+          } catch (e) {
+            print('Error parsing time range: $e');
+            expandedSlots.add(range);
+          }
+        }
+      } else {
+        // If the slot is not a range, add it directly (e.g., specific time)
+        try {
+          DateTime specificTime = format.parse(range);
+          DateTime specificDateTime = DateTime(appointmentDate.year, appointmentDate.month, appointmentDate.day, specificTime.hour, specificTime.minute);
+
+          if (!isToday || specificDateTime.isAfter(DateTime.now().subtract(const Duration(minutes: 1)))) {
+            expandedSlots.add(range);
+          }
+        } catch (e) {
+          expandedSlots.add(range);
+        }
+      }
+    }
+    return expandedSlots.toSet().toList();
+  }
+
 
   @override
   Widget build(BuildContext context) {
@@ -332,12 +403,17 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     ),
                     const SizedBox(height: 12),
                     Expanded(
-                      child: _availableSlots.isEmpty
-                          ? const Center(child: Text('No slots available.', style: TextStyle(fontStyle: FontStyle.italic)))
+                      child: _currentDaySlots.isEmpty // FIX: Use _currentDaySlots
+                          ? Center(
+                          child: Text(
+                              _doctorSchedule.isEmpty
+                                  ? 'Fetching doctor schedule...'
+                                  : 'No slots available on ${_getDayName(_selectedDate)}.',
+                              style: const TextStyle(fontStyle: FontStyle.italic)))
                           : Wrap(
                         spacing: 8.0,
                         runSpacing: 8.0,
-                        children: _availableSlots.map((slot) { // Use the fetched slots
+                        children: _currentDaySlots.map((slot) { // FIX: Use _currentDaySlots
                           bool isSelected = _selectedTimeSlot == slot;
                           return GestureDetector(
                             onTap: () {
@@ -415,8 +491,8 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   bool _canGoToNextMonth() {
     DateTime nextMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
-    DateTime maxMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
-    return nextMonth.isBefore(maxMonth) || nextMonth.isAtSameMomentAs(maxMonth);
+    DateTime maxMonth = DateTime(DateTime.now().year, DateTime.now().month + 2, 1); // Allow booking one month in advance
+    return nextMonth.isBefore(maxMonth);
   }
 
   Widget _buildCalendarGrid() {
@@ -449,7 +525,15 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         bool isToday = _isSameDay(date, DateTime.now());
         bool isSelected = _isSameDay(date, _selectedDate);
         bool isPastDate = date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
-        bool isSelectable = !isPastDate;
+
+
+        // Determine if the day is available in the doctor's schedule
+        final dayName = _getDayName(date);
+        final bool isDoctorAvailable = _doctorSchedule[dayName]?.isNotEmpty ?? false;
+
+        // Disable past dates and dates with no schedule
+        bool isSelectable = !isPastDate && isDoctorAvailable;
+
 
         return GestureDetector(
           onTap: isSelectable ? () {
@@ -457,6 +541,7 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               _selectedDate = date;
               _selectedTimeSlot = null;
             });
+            _updateCurrentDaySlots(date); // FIX: Update slots on selection
           } : null,
           child: Container(
             decoration: BoxDecoration(
@@ -485,10 +570,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   fontWeight: FontWeight.w600,
                   color: isSelected
                       ? Colors.white
+                      : isPastDate || !isDoctorAvailable
+                      ? Colors.grey[400]
                       : isToday
                       ? primaryBlue
-                      : isPastDate
-                      ? Colors.grey[400]
                       : darkBlue,
                 ),
               ),

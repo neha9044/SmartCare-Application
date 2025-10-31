@@ -1,4 +1,4 @@
-// doctor_profile_screen.dart
+// lib/screens/doctor/DoctorProfileScreen.dart
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smartcare_app/services/auth_service.dart';
@@ -14,13 +14,18 @@ class DoctorProfileScreen extends StatefulWidget {
 
 class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final AuthService _authService = AuthService();
-  List<String> _timeSlots = [];
+  // UPDATED: Now stores schedule as a map for display
+  Map<String, List<String>> _schedule = {};
   bool _isLoading = true;
 
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color darkBlue = const Color(0xFF1976D2);
   final Color backgroundColor = const Color(0xFFF5F7FA);
   final Color cardColor = Colors.white;
+
+  final List<String> _daysOfWeek = const [
+    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+  ];
 
   @override
   void initState() {
@@ -33,10 +38,29 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
       final docSnapshot = await FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).get();
       if (docSnapshot.exists) {
         final data = docSnapshot.data() as Map<String, dynamic>;
-        setState(() {
-          _timeSlots = List<String>.from(data['availableSlots'] ?? []);
-          _isLoading = false;
-        });
+
+        // Handle new map format or old list format migration for display
+        final dynamic fetchedSlots = data['availableSlots'];
+        if (fetchedSlots is Map<String, dynamic>) {
+          setState(() {
+            _schedule = fetchedSlots.map((key, value) => MapEntry(key, List<String>.from(value)));
+            _isLoading = false;
+          });
+        } else if (fetchedSlots is List<dynamic>) {
+          // Simple migration logic for display: apply old list to Mon-Fri if it exists
+          _schedule.clear();
+          final List<String> oldSlots = List<String>.from(fetchedSlots.map((e) => e.toString()));
+          for (var day in _daysOfWeek) {
+            if (day != 'Sunday' && day != 'Saturday' && oldSlots.isNotEmpty) {
+              _schedule[day] = oldSlots;
+            } else {
+              _schedule[day] = [];
+            }
+          }
+          setState(() {
+            _isLoading = false;
+          });
+        }
       }
     } catch (e) {
       print("Error fetching doctor data: $e");
@@ -46,103 +70,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     }
   }
 
-  Future<void> _saveTimeSlots() async {
-    try {
-      await FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).update({
-        'availableSlots': _timeSlots,
-      });
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(
-          content: const Text('Time slots saved successfully!'),
-          backgroundColor: primaryBlue,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(
-          content: Text('Failed to save time slots.'),
-          backgroundColor: Colors.red,
-          behavior: SnackBarBehavior.floating,
-        ),
-      );
-    }
-  }
-
-  void _editTimeSlotsDialog() {
-    TextEditingController controller = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
-              title: const Text("Edit Time Slots", style: TextStyle(fontWeight: FontWeight.bold)),
-              content: SingleChildScrollView(
-                child: Column(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    if (_timeSlots.isNotEmpty) ...[
-                      Wrap(
-                        spacing: 8.0,
-                        runSpacing: 4.0,
-                        children: _timeSlots.map((slot) {
-                          return Chip(
-                            label: Text(slot, style: const TextStyle(fontSize: 12)),
-                            backgroundColor: primaryBlue.withOpacity(0.1),
-                            deleteIcon: const Icon(Icons.close, size: 16),
-                            onDeleted: () {
-                              setDialogState(() {
-                                _timeSlots.remove(slot);
-                              });
-                              setState(() {});
-                            },
-                          );
-                        }).toList(),
-                      ),
-                      const SizedBox(height: 16),
-                    ],
-                    TextField(
-                      controller: controller,
-                      decoration: InputDecoration(
-                        labelText: "Add Time Slot (e.g., 10:00 AM)",
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(8)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.of(context).pop(),
-                  child: const Text('Cancel'),
-                ),
-                ElevatedButton(
-                  onPressed: () {
-                    if (controller.text.isNotEmpty && !_timeSlots.contains(controller.text)) {
-                      setState(() {
-                        _timeSlots.add(controller.text);
-                      });
-                      _saveTimeSlots();
-                      Navigator.of(context).pop();
-                    }
-                  },
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: primaryBlue,
-                    foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
-                  ),
-                  child: const Text('Add & Save'),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
-  }
+  // REMOVED: _saveTimeSlots() and _editTimeSlotsDialog()
 
   @override
   Widget build(BuildContext context) {
@@ -168,7 +96,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           final String email = data['email'] ?? 'N/A';
           final String phone = data['phone'] ?? 'N/A';
           final String specialty = data['specialty'] ?? 'N/A';
-          final String license = data['license'] ?? 'N/A';
+          final String license = data['licenseNumber'] ?? 'N/A';
           final String experience = data['experience'] ?? 'N/A';
           final String qualification = data['qualification'] ?? 'N/A';
           final String location = data['location'] ?? 'N/A';
@@ -214,11 +142,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                             textAlign: TextAlign.left,
                           ),
                         ),
-                        IconButton(
-                          onPressed: () => _editTimeSlotsDialog(),
-                          icon: const Icon(Icons.edit, color: Colors.white),
-                          padding: EdgeInsets.zero,
-                        ),
+                        // REMOVED: Edit button was here
                       ],
                     ),
                     const SizedBox(height: 12),
@@ -363,92 +287,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       ),
                       const SizedBox(height: 12),
 
-                      // Time Slots Section
-                      Container(
-                        width: double.infinity,
-                        padding: const EdgeInsets.all(12),
-                        decoration: BoxDecoration(
-                          color: cardColor,
-                          borderRadius: BorderRadius.circular(12),
-                          boxShadow: [
-                            BoxShadow(
-                              color: Colors.grey.withOpacity(0.1),
-                              spreadRadius: 1,
-                              blurRadius: 6,
-                              offset: const Offset(0, 2),
-                            ),
-                          ],
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Row(
-                              mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                              children: [
-                                const Text(
-                                  'Available Slots',
-                                  style: TextStyle(
-                                    fontSize: 14,
-                                    fontWeight: FontWeight.bold,
-                                  ),
-                                ),
-                                TextButton.icon(
-                                  onPressed: _editTimeSlotsDialog,
-                                  icon: Icon(Icons.edit, size: 14, color: primaryBlue),
-                                  label: Text('Edit', style: TextStyle(color: primaryBlue, fontSize: 12)),
-                                  style: TextButton.styleFrom(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6),
-                                    minimumSize: Size.zero,
-                                    tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                                  ),
-                                ),
-                              ],
-                            ),
-                            const SizedBox(height: 6),
-                            _timeSlots.isEmpty
-                                ? Text(
-                              'No time slots available.',
-                              style: TextStyle(
-                                fontStyle: FontStyle.italic,
-                                color: Colors.grey[600],
-                              ),
-                            )
-                                : Wrap(
-                              spacing: 6.0,
-                              runSpacing: 3.0,
-                              children: _timeSlots.take(6).map((slot) =>
-                                  Container(
-                                    padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                                    decoration: BoxDecoration(
-                                      color: primaryBlue.withOpacity(0.1),
-                                      borderRadius: BorderRadius.circular(12),
-                                      border: Border.all(color: primaryBlue.withOpacity(0.3)),
-                                    ),
-                                    child: Text(
-                                      slot,
-                                      style: TextStyle(
-                                        color: primaryBlue,
-                                        fontSize: 10,
-                                        fontWeight: FontWeight.w500,
-                                      ),
-                                    ),
-                                  )
-                              ).toList(),
-                            ),
-                            if (_timeSlots.length > 6)
-                              Padding(
-                                padding: const EdgeInsets.only(top: 4),
-                                child: Text(
-                                  '+${_timeSlots.length - 6} more slots',
-                                  style: TextStyle(
-                                    color: Colors.grey[600],
-                                    fontSize: 10,
-                                  ),
-                                ),
-                              ),
-                          ],
-                        ),
-                      ),
+                      // Time Slots Section (Now a read-only summary)
+                      _buildTimeSlotsSection(),
                       const Spacer(),
 
                       // Logout Button
@@ -486,6 +326,104 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
             ],
           );
         },
+      ),
+    );
+  }
+
+  Widget _buildTimeSlotsSection() {
+    final List<Widget> dayWidgets = [];
+    final List<String> sortedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+
+    for (var day in sortedDays) {
+      final slots = _schedule[day] ?? [];
+      final isAvailable = slots.isNotEmpty;
+
+      dayWidgets.add(
+        Padding(
+          padding: const EdgeInsets.only(bottom: 4.0),
+          child: Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              SizedBox(
+                width: 70,
+                child: Text(
+                  '$day:',
+                  style: TextStyle(
+                    fontWeight: FontWeight.bold,
+                    fontSize: 12,
+                    color: isAvailable ? darkBlue : Colors.grey[600],
+                  ),
+                ),
+              ),
+              Expanded(
+                child: isAvailable
+                    ? Wrap(
+                  spacing: 6.0,
+                  runSpacing: 3.0,
+                  children: slots.map((slot) =>
+                      Container(
+                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
+                        decoration: BoxDecoration(
+                          color: primaryBlue.withOpacity(0.1),
+                          borderRadius: BorderRadius.circular(12),
+                          border: Border.all(color: primaryBlue.withOpacity(0.3)),
+                        ),
+                        child: Text(
+                          slot,
+                          style: TextStyle(
+                            color: primaryBlue,
+                            fontSize: 10,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      )
+                  ).toList(),
+                )
+                    : Text(
+                  'Unavailable/Holiday',
+                  style: TextStyle(
+                    fontStyle: FontStyle.italic,
+                    color: Colors.red[700],
+                    fontSize: 12,
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      );
+    }
+
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: cardColor,
+        borderRadius: BorderRadius.circular(12),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.grey.withOpacity(0.1),
+            spreadRadius: 1,
+            blurRadius: 6,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Weekly Schedule (Set on Dashboard)',
+            style: TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.bold,
+              color: Color(0xFF1A1A1A),
+            ),
+          ),
+          const SizedBox(height: 8),
+          ...dayWidgets,
+        ],
       ),
     );
   }

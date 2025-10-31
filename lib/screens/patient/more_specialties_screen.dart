@@ -106,12 +106,14 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
           reviewCount: data['reviewCount'] ?? 0,
           experience: data['experience'] ?? 'N/A',
           imageUrl: data['profileImage'] ?? '',
-          availableSlots: (data['availableSlots'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-              ['9:00 AM', '10:00 AM', '11:00 AM'],
+          // FIX: Fetch the new availableSlots map for the schedule
+          availableSchedule: (data['availableSlots'] is Map<String, dynamic>
+              ? (data['availableSlots'] as Map<String, dynamic>).map(
+                (k, v) => MapEntry(k, List<String>.from(v)),
+          )
+              : {}),
           consultationFee: (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
-          isAvailableToday: data['isAvailableToday'] ?? true,
+          isAvailableToday: true, // FIX: Always enable as per user request
           about: data['about'] ?? 'Experienced medical professional.',
           qualifications: (data['qualification'] as String?)
               ?.split(',')
@@ -499,13 +501,11 @@ class SimpleDoctorCard extends StatelessWidget {
           ),
           // Book Now Button
           ElevatedButton(
-            onPressed: doctor.isAvailableToday ? onBookPressed : null,
+            onPressed: onBookPressed, // FIX: Always enabled
             style: ElevatedButton.styleFrom(
-              backgroundColor: doctor.isAvailableToday
-                  ? primaryBlue
-                  : Colors.grey[400],
+              backgroundColor: primaryBlue, // FIX: Always primary color
               foregroundColor: Colors.white,
-              elevation: doctor.isAvailableToday ? 2 : 0,
+              elevation: 2,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(8),
               ),

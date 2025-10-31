@@ -8,13 +8,13 @@ class Doctor {
   final int reviewCount;
   final String experience;
   final String imageUrl;
-  final List<String> availableSlots;
-  final double consultationFee;
-  final bool isAvailableToday;
   final String about;
   final List<String> qualifications;
   final double? latitude;
   final double? longitude;
+  final Map<String, List<String>> availableSchedule; // UPDATED to Map<String, List<String>>
+  final double consultationFee;
+  final bool isAvailableToday;
 
   Doctor({
     required this.id,
@@ -26,12 +26,13 @@ class Doctor {
     required this.reviewCount,
     required this.experience,
     required this.imageUrl,
-    required this.availableSlots,
+    required this.availableSchedule,
     required this.consultationFee,
     required this.isAvailableToday,
     required this.about,
     required this.qualifications,
     this.latitude,
     this.longitude,
+
   });
 }
