@@ -14,6 +14,7 @@ import 'package:smartcare_app/services/location_service.dart';
 import 'book_appointment_screen.dart';
 import 'more_specialties_screen.dart';
 import 'chatbot_screen.dart'; // <-- New import for the chatbot screen
+import 'medical_reports_screen.dart'; // <-- New import for medical reports
 
 // Placeholder for AppColors with a red color constant
 class AppColors {
@@ -620,6 +621,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 Column(
                   children: [
                     _buildHeaderIconButton(
+                      Icons.description_outlined,
+                      const Color(0xFF4CAF50),
+                      () {
+                        // Navigate to Medical Reports screen
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => const MedicalReportsScreen(),
+                          ),
+                        );
+                      },
+                    ),
+                    const SizedBox(height: 8),
+                    _buildHeaderIconButton(
                       Icons.chat_bubble_outline_rounded,
                       const Color(0xFFFF6B9D),
                       () {
@@ -633,7 +648,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         // END OF CHATBOT INTEGRATION
                       },
                     ),
-                    const SizedBox(height: 12),
+                    const SizedBox(height: 8),
                     _buildHeaderIconButton(
                       Icons.person_outline_rounded,
                       primaryBlue,
