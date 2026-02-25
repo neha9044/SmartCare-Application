@@ -21,7 +21,8 @@ class PatientDashboard extends StatefulWidget {
   _PatientDashboardState createState() => _PatientDashboardState();
 }
 
-class _PatientDashboardState extends State<PatientDashboard> with TickerProviderStateMixin {
+class _PatientDashboardState extends State<PatientDashboard>
+    with TickerProviderStateMixin {
   int _selectedIndex = 0;
   late AnimationController _animationController;
   late Animation<double> _scaleAnimation;
@@ -83,13 +84,9 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
       duration: const Duration(milliseconds: 300),
       vsync: this,
     );
-    _scaleAnimation = Tween<double>(
-      begin: 0.8,
-      end: 1.0,
-    ).animate(CurvedAnimation(
-      parent: _animationController,
-      curve: Curves.elasticOut,
-    ));
+    _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
+      CurvedAnimation(parent: _animationController, curve: Curves.elasticOut),
+    );
     _animationController.forward();
 
     WidgetsBinding.instance.addPostFrameCallback((_) {
@@ -138,12 +135,12 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
         .where('read', isEqualTo: false)
         .snapshots()
         .listen((snapshot) {
-      if (mounted) {
-        setState(() {
-          _unreadNotifications = snapshot.docs.length;
+          if (mounted) {
+            setState(() {
+              _unreadNotifications = snapshot.docs.length;
+            });
+          }
         });
-      }
-    });
   }
 
   @override
@@ -177,10 +174,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
               gradient: LinearGradient(
                 begin: Alignment.topCenter,
                 end: Alignment.bottomCenter,
-                colors: [
-                  backgroundColor,
-                  backgroundColor.withOpacity(0.8),
-                ],
+                colors: [backgroundColor, backgroundColor.withOpacity(0.8)],
               ),
             ),
           ),
@@ -188,11 +182,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
         ],
       ),
       bottomNavigationBar: Container(
-        margin: const EdgeInsets.only(
-          left: 20,
-          right: 20,
-          bottom: 20,
-        ),
+        margin: const EdgeInsets.only(left: 20, right: 20, bottom: 20),
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(25),
           boxShadow: [
@@ -226,7 +216,7 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
               mainAxisAlignment: MainAxisAlignment.spaceEvenly,
               children: List.generate(
                 _navItems.length,
-                    (index) => _buildNavItem(index),
+                (index) => _buildNavItem(index),
               ),
             ),
           ),
@@ -267,8 +257,9 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
                     alignment: Alignment.center,
                     children: [
                       ScaleTransition(
-                        scale: isSelected ? _scaleAnimation :
-                        const AlwaysStoppedAnimation(1.0),
+                        scale: isSelected
+                            ? _scaleAnimation
+                            : const AlwaysStoppedAnimation(1.0),
                         child: Icon(
                           isSelected ? item['activeIcon'] : item['icon'],
                           size: isSelected ? 24 : 20,
@@ -284,7 +275,10 @@ class _PatientDashboardState extends State<PatientDashboard> with TickerProvider
                             decoration: BoxDecoration(
                               color: Colors.red,
                               borderRadius: BorderRadius.circular(10),
-                              border: Border.all(color: Colors.white, width: 1.5),
+                              border: Border.all(
+                                color: Colors.white,
+                                width: 1.5,
+                              ),
                             ),
                             constraints: const BoxConstraints(
                               minWidth: 16,

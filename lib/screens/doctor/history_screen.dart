@@ -55,8 +55,13 @@ class HistoryScreen extends StatelessWidget {
               return Card(
                 color: Colors.red.shade50,
                 child: const ListTile(
-                  title: Text('Error with this record.', style: TextStyle(color: Colors.red)),
-                  subtitle: Text('This document could not be loaded due to a data error.'),
+                  title: Text(
+                    'Error with this record.',
+                    style: TextStyle(color: Colors.red),
+                  ),
+                  subtitle: Text(
+                    'This document could not be loaded due to a data error.',
+                  ),
                 ),
               );
             }
@@ -76,12 +81,14 @@ class HistoryScreen extends StatelessWidget {
       date = (record['timestamp'] as Timestamp).toDate().toString();
     }
 
-    final List<dynamic> medicines = (record['medicines'] as List<dynamic>?) ?? [];
+    final List<dynamic> medicines =
+        (record['medicines'] as List<dynamic>?) ?? [];
     final String diagnosis = record['diagnosis'] as String? ?? 'N/A';
     final String followUpDate = record['followUpDate'] as String? ?? 'N/A';
     final String patientName = record['patientName'] as String? ?? 'N/A';
     final String doctorName = record['doctorName'] as String? ?? 'N/A';
-    final String doctorSpecialty = record['doctorSpecialty'] as String? ?? 'N/A';
+    final String doctorSpecialty =
+        record['doctorSpecialty'] as String? ?? 'N/A';
     final String clinic = record['clinicAddress'] as String? ?? 'N/A';
 
     return Container(
@@ -117,22 +124,28 @@ class HistoryScreen extends StatelessWidget {
                     child: Text(
                       "RX for $patientName",
                       style: const TextStyle(
-                          fontWeight: FontWeight.bold,
-                          fontSize: 18,
-                          color: Color(0xFF2C3E50)),
+                        fontWeight: FontWeight.bold,
+                        fontSize: 18,
+                        color: Color(0xFF2C3E50),
+                      ),
                     ),
                   ),
                   Column(
                     crossAxisAlignment: CrossAxisAlignment.end,
                     children: [
-                      const Icon(Icons.receipt_long, color: Colors.blue, size: 36),
+                      const Icon(
+                        Icons.receipt_long,
+                        color: Colors.blue,
+                        size: 36,
+                      ),
                       const SizedBox(height: 4),
                       Text(
                         date,
                         style: const TextStyle(
-                            color: Colors.black54,
-                            fontSize: 12,
-                            fontStyle: FontStyle.italic),
+                          color: Colors.black54,
+                          fontSize: 12,
+                          fontStyle: FontStyle.italic,
+                        ),
                       ),
                     ],
                   ),
@@ -176,7 +189,10 @@ class HistoryScreen extends StatelessWidget {
                   Expanded(
                     child: Text(
                       diagnosis,
-                      style: const TextStyle(fontSize: 14, color: Colors.black87),
+                      style: const TextStyle(
+                        fontSize: 14,
+                        color: Colors.black87,
+                      ),
                     ),
                   ),
                 ],
@@ -187,16 +203,24 @@ class HistoryScreen extends StatelessWidget {
             // Medication
             Text(
               "Medications",
-              style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16, color: Colors.blue.shade700),
+              style: TextStyle(
+                fontWeight: FontWeight.bold,
+                fontSize: 16,
+                color: Colors.blue.shade700,
+              ),
             ),
             const SizedBox(height: 8),
 
             if (medicines.isEmpty)
-              const Text('No medication prescribed.', style: TextStyle(color: Colors.black54))
+              const Text(
+                'No medication prescribed.',
+                style: TextStyle(color: Colors.black54),
+              )
             else
               ...medicines.map((med) {
                 final medMap = Map<String, dynamic>.from(med);
-                final String instructions = (medMap['specialInstructions'] as String?) ?? '';
+                final String instructions =
+                    (medMap['specialInstructions'] as String?) ?? '';
                 return Container(
                   margin: const EdgeInsets.symmetric(vertical: 6),
                   padding: const EdgeInsets.all(10),
@@ -210,18 +234,35 @@ class HistoryScreen extends StatelessWidget {
                     children: [
                       Text(
                         medMap['medicineName'] as String? ?? 'N/A',
-                        style: const TextStyle(fontWeight: FontWeight.bold, fontSize: 14),
+                        style: const TextStyle(
+                          fontWeight: FontWeight.bold,
+                          fontSize: 14,
+                        ),
                       ),
                       const SizedBox(height: 4),
                       Row(
                         children: [
-                          const Icon(Icons.schedule, size: 16, color: Colors.green),
+                          const Icon(
+                            Icons.schedule,
+                            size: 16,
+                            color: Colors.green,
+                          ),
                           const SizedBox(width: 4),
-                          Text(medMap['dosageAndFrequency'] as String? ?? 'N/A', style: const TextStyle(fontSize: 13)),
+                          Text(
+                            medMap['dosageAndFrequency'] as String? ?? 'N/A',
+                            style: const TextStyle(fontSize: 13),
+                          ),
                           const SizedBox(width: 10),
-                          const Icon(Icons.calendar_today, size: 16, color: Colors.green),
+                          const Icon(
+                            Icons.calendar_today,
+                            size: 16,
+                            color: Colors.green,
+                          ),
                           const SizedBox(width: 4),
-                          Text(medMap['duration'] as String? ?? 'N/A', style: const TextStyle(fontSize: 13)),
+                          Text(
+                            medMap['duration'] as String? ?? 'N/A',
+                            style: const TextStyle(fontSize: 13),
+                          ),
                         ],
                       ),
                       if (instructions.isNotEmpty)
@@ -229,9 +270,18 @@ class HistoryScreen extends StatelessWidget {
                           padding: const EdgeInsets.only(top: 4),
                           child: Row(
                             children: [
-                              const Icon(Icons.info_outline, size: 16, color: Colors.green),
+                              const Icon(
+                                Icons.info_outline,
+                                size: 16,
+                                color: Colors.green,
+                              ),
                               const SizedBox(width: 4),
-                              Expanded(child: Text(instructions, style: const TextStyle(fontSize: 13))),
+                              Expanded(
+                                child: Text(
+                                  instructions,
+                                  style: const TextStyle(fontSize: 13),
+                                ),
+                              ),
                             ],
                           ),
                         ),
@@ -247,7 +297,10 @@ class HistoryScreen extends StatelessWidget {
               children: [
                 const Icon(Icons.event_note, color: Colors.purple, size: 18),
                 const SizedBox(width: 6),
-                Text("Follow-up: $followUpDate", style: const TextStyle(fontSize: 13, color: Colors.black87)),
+                Text(
+                  "Follow-up: $followUpDate",
+                  style: const TextStyle(fontSize: 13, color: Colors.black87),
+                ),
               ],
             ),
           ],
@@ -266,10 +319,15 @@ class HistoryScreen extends StatelessWidget {
             width: 90,
             child: Text(
               label,
-              style: const TextStyle(fontWeight: FontWeight.bold, color: Colors.black54),
+              style: const TextStyle(
+                fontWeight: FontWeight.bold,
+                color: Colors.black54,
+              ),
             ),
           ),
-          Expanded(child: Text(value, style: const TextStyle(color: Colors.black87))),
+          Expanded(
+            child: Text(value, style: const TextStyle(color: Colors.black87)),
+          ),
         ],
       ),
     );

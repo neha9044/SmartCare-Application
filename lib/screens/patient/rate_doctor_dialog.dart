@@ -27,7 +27,9 @@ class _RateDoctorDialogState extends State<RateDoctorDialog> {
 
   Future<void> _submitRating() async {
     if (_selectedRating == 0) {
-      ScaffoldMessenger.of(context).showSnackBar(const SnackBar(content: Text('Please select a star rating.')));
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Please select a star rating.')),
+      );
       return;
     }
 
@@ -55,19 +57,20 @@ class _RateDoctorDialogState extends State<RateDoctorDialog> {
           .collection('appointments')
           .doc(widget.appointmentId)
           .update({
-        'rated': true,
-        'patientReview': _reviewController.text.trim(),
-        'patientRating': _selectedRating,
-      });
+            'rated': true,
+            'patientReview': _reviewController.text.trim(),
+            'patientRating': _selectedRating,
+          });
 
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Thank you for your feedback!')),
       );
-
     } catch (e) {
       print('Error submitting rating: $e');
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to submit rating. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to submit rating. Please try again.'),
+        ),
       );
     } finally {
       setState(() {
@@ -88,9 +91,7 @@ class _RateDoctorDialogState extends State<RateDoctorDialog> {
   @override
   Widget build(BuildContext context) {
     return Dialog(
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(16),
-      ),
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
       elevation: 0,
       backgroundColor: Colors.transparent,
       child: Container(
@@ -124,10 +125,7 @@ class _RateDoctorDialogState extends State<RateDoctorDialog> {
             Text(
               'Dr. ${widget.doctorName}',
               textAlign: TextAlign.center,
-              style: const TextStyle(
-                fontSize: 13,
-                color: Colors.grey,
-              ),
+              style: const TextStyle(fontSize: 13, color: Colors.grey),
             ),
             const SizedBox(height: 16),
             Row(
@@ -162,7 +160,10 @@ class _RateDoctorDialogState extends State<RateDoctorDialog> {
                   borderRadius: BorderRadius.circular(8),
                   borderSide: BorderSide.none,
                 ),
-                contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 12,
+                  vertical: 8,
+                ),
               ),
               style: const TextStyle(fontSize: 12),
               maxLines: 2,
@@ -187,20 +188,25 @@ class _RateDoctorDialogState extends State<RateDoctorDialog> {
                   onPressed: _isLoading ? null : _submitRating,
                   style: ElevatedButton.styleFrom(
                     backgroundColor: const Color(0xFF2196F3),
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                     minimumSize: const Size(70, 32),
                     padding: const EdgeInsets.symmetric(horizontal: 12),
                   ),
                   child: _isLoading
                       ? const SizedBox(
-                    height: 16,
-                    width: 16,
-                    child: CircularProgressIndicator(color: Colors.white, strokeWidth: 2),
-                  )
+                          height: 16,
+                          width: 16,
+                          child: CircularProgressIndicator(
+                            color: Colors.white,
+                            strokeWidth: 2,
+                          ),
+                        )
                       : const Text(
-                    'Submit',
-                    style: TextStyle(color: Colors.white, fontSize: 12),
-                  ),
+                          'Submit',
+                          style: TextStyle(color: Colors.white, fontSize: 12),
+                        ),
                 ),
               ],
             ),

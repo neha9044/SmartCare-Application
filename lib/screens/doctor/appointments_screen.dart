@@ -8,14 +8,16 @@ import 'package:smartcare_app/screens/doctor/prescription_screen.dart';
 import 'package:smartcare_app/screens/doctor/history_screen.dart';
 
 class AppointmentsScreen extends StatefulWidget {
-  const AppointmentsScreen({Key? key, required this.doctorId}) : super(key: key);
+  const AppointmentsScreen({Key? key, required this.doctorId})
+    : super(key: key);
   final String doctorId;
 
   @override
   _AppointmentsScreenState createState() => _AppointmentsScreenState();
 }
 
-class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProviderStateMixin {
+class _AppointmentsScreenState extends State<AppointmentsScreen>
+    with TickerProviderStateMixin {
   late TabController _tabController;
   Map<String, String> _doctorDetails = {
     'name': 'Dr. Alex Chen',
@@ -38,12 +40,16 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
 
   Future<void> _fetchDoctorDetails() async {
     try {
-      final docSnapshot = await FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).get();
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(widget.doctorId)
+          .get();
       if (docSnapshot.exists && docSnapshot.data() != null) {
         final data = docSnapshot.data()!;
         setState(() {
           _doctorDetails['name'] = data['name'] ?? 'Dr. Alex Chen';
-          _doctorDetails['specialty'] = data['specialty'] ?? 'General Physician';
+          _doctorDetails['specialty'] =
+              data['specialty'] ?? 'General Physician';
           _doctorDetails['address'] = data['clinicAddress'] ?? 'N/A';
         });
       }
@@ -52,19 +58,26 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     }
   }
 
-  Future<void> _updateAppointmentStatus(String docId, AppointmentStatus newStatus) async {
+  Future<void> _updateAppointmentStatus(
+    String docId,
+    AppointmentStatus newStatus,
+  ) async {
     try {
       await FirebaseFirestore.instance
           .collection('appointments')
           .doc(docId)
           .update({'status': newStatus.toShortString()});
       ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text('Appointment status updated to ${newStatus.toShortString()}')),
+        SnackBar(
+          content: Text(
+            'Appointment status updated to ${newStatus.toShortString()}',
+          ),
+        ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to update status.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Failed to update status.')));
     }
   }
 
@@ -80,7 +93,9 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           maxChildSize: 1.0,
           builder: (BuildContext context, ScrollController scrollController) {
             return ClipRRect(
-              borderRadius: const BorderRadius.vertical(top: Radius.circular(25)),
+              borderRadius: const BorderRadius.vertical(
+                top: Radius.circular(25),
+              ),
               child: PatientRecordScreen(
                 patientId: patientId,
                 patientName: patientName,
@@ -99,7 +114,13 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
     return Scaffold(
       backgroundColor: const Color(0xFFF5F7FA),
       appBar: AppBar(
-        title: const Text("Queue Management", style: TextStyle(color: Color(0xFF212121), fontWeight: FontWeight.bold)),
+        title: const Text(
+          "Queue Management",
+          style: TextStyle(
+            color: Color(0xFF212121),
+            fontWeight: FontWeight.bold,
+          ),
+        ),
         backgroundColor: Colors.white,
         elevation: 0,
         bottom: TabBar(
@@ -142,7 +163,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           return Center(
             child: Text(
               'No ${statusString.toLowerCase()} appointments.',
-              style: const TextStyle(fontStyle: FontStyle.italic, color: Colors.grey),
+              style: const TextStyle(
+                fontStyle: FontStyle.italic,
+                color: Colors.grey,
+              ),
             ),
           );
         }
@@ -155,7 +179,8 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
           itemBuilder: (context, index) {
             final appointment = sortedAppointments[index];
             final appointmentData = appointment.data() as Map<String, dynamic>;
-            final patientName = appointmentData['patientName'] ?? 'Unknown Patient';
+            final patientName =
+                appointmentData['patientName'] ?? 'Unknown Patient';
             final patientId = appointmentData['patientId'] ?? '';
             final time = appointmentData['time'] ?? 'N/A';
             final date = (appointmentData['date'] as Timestamp).toDate();
@@ -163,19 +188,27 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
             return Card(
               margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
               elevation: 4,
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(15)),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(15),
+              ),
               child: ListTile(
                 contentPadding: const EdgeInsets.all(16),
                 leading: CircleAvatar(
                   backgroundColor: const Color(0xFF3498DB),
                   child: Text(
                     '${index + 1}',
-                    style: const TextStyle(color: Colors.white, fontWeight: FontWeight.bold),
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontWeight: FontWeight.bold,
+                    ),
                   ),
                 ),
                 title: Text(
                   patientName,
-                  style: const TextStyle(fontWeight: FontWeight.bold, color: Color(0xFF2C3E50)),
+                  style: const TextStyle(
+                    fontWeight: FontWeight.bold,
+                    color: Color(0xFF2C3E50),
+                  ),
                 ),
                 subtitle: Text(
                   'Time: $time | Date: ${date.day}/${date.month}/${date.year}',
@@ -185,24 +218,25 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
                   onSelected: (AppointmentStatus result) {
                     _updateAppointmentStatus(appointment.id, result);
                   },
-                  itemBuilder: (BuildContext context) => <PopupMenuEntry<AppointmentStatus>>[
-                    const PopupMenuItem<AppointmentStatus>(
-                      value: AppointmentStatus.pending,
-                      child: Text('Pending'),
-                    ),
-                    const PopupMenuItem<AppointmentStatus>(
-                      value: AppointmentStatus.inProgress,
-                      child: Text('In Progress'),
-                    ),
-                    const PopupMenuItem<AppointmentStatus>(
-                      value: AppointmentStatus.completed,
-                      child: Text('Completed'),
-                    ),
-                    const PopupMenuItem<AppointmentStatus>(
-                      value: AppointmentStatus.canceled,
-                      child: Text('Canceled'),
-                    ),
-                  ],
+                  itemBuilder: (BuildContext context) =>
+                      <PopupMenuEntry<AppointmentStatus>>[
+                        const PopupMenuItem<AppointmentStatus>(
+                          value: AppointmentStatus.pending,
+                          child: Text('Pending'),
+                        ),
+                        const PopupMenuItem<AppointmentStatus>(
+                          value: AppointmentStatus.inProgress,
+                          child: Text('In Progress'),
+                        ),
+                        const PopupMenuItem<AppointmentStatus>(
+                          value: AppointmentStatus.completed,
+                          child: Text('Completed'),
+                        ),
+                        const PopupMenuItem<AppointmentStatus>(
+                          value: AppointmentStatus.canceled,
+                          child: Text('Canceled'),
+                        ),
+                      ],
                 ),
                 onTap: () {
                   _showPatientRecordBottomSheet(patientId, patientName);
@@ -214,7 +248,10 @@ class _AppointmentsScreenState extends State<AppointmentsScreen> with TickerProv
       },
     );
   }
-  List<QueryDocumentSnapshot> _sortAppointments(List<QueryDocumentSnapshot> appointments) {
+
+  List<QueryDocumentSnapshot> _sortAppointments(
+    List<QueryDocumentSnapshot> appointments,
+  ) {
     appointments.sort((a, b) {
       final aData = a.data() as Map<String, dynamic>;
       final bData = b.data() as Map<String, dynamic>;

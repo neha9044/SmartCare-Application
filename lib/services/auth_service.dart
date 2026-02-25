@@ -129,7 +129,10 @@ class AuthService {
     required String expectedUserType,
   }) async {
     final collectionPath = _getCollectionPathForUserType(expectedUserType);
-    final userDoc = await _firestore.collection(collectionPath).doc(userId).get();
+    final userDoc = await _firestore
+        .collection(collectionPath)
+        .doc(userId)
+        .get();
     return userDoc.exists;
   }
 

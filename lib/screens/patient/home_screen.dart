@@ -18,7 +18,9 @@ import 'chatbot_screen.dart'; // <-- New import for the chatbot screen
 // Placeholder for AppColors with a red color constant
 class AppColors {
   static const Color primaryColor = Color(0xFF2196F3);
-  static const Color redColor = Color(0xFFE57373); // New red color for location icon
+  static const Color redColor = Color(
+    0xFFE57373,
+  ); // New red color for location icon
 }
 
 class HomeScreen extends StatefulWidget {
@@ -219,7 +221,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       if (!hasPermission) {
         setState(() {
           _currentLocation = 'Permission Denied';
-          _currentPosition = null; // Set position to null if permission is denied
+          _currentPosition =
+              null; // Set position to null if permission is denied
         });
         return;
       }
@@ -262,9 +265,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -282,10 +286,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   void _listenToDoctorUpdates() {
-    FirebaseFirestore.instance
-        .collection('doctors')
-        .snapshots()
-        .listen((snapshot) {
+    FirebaseFirestore.instance.collection('doctors').snapshots().listen((
+      snapshot,
+    ) {
       if (mounted) {
         _processDoctorData(snapshot.docs);
         _filterDoctors();
@@ -314,8 +317,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
 
   Future<void> _fetchAndSetDoctors() async {
     try {
-      final snapshot =
-      await FirebaseFirestore.instance.collection('doctors').get();
+      final snapshot = await FirebaseFirestore.instance
+          .collection('doctors')
+          .get();
       _processDoctorData(snapshot.docs);
     } catch (e) {
       print('Error fetching doctors: $e');
@@ -327,6 +331,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         _specializationCounts = {};
       });
     }
+  }
+
+  List<String> _parseAvailableSlots(dynamic slots) {
+    if (slots == null) {
+      return ['9:00 AM', '10:00 AM', '11:00 AM'];
+    }
+
+    if (slots is List) {
+      return slots.map((e) => e.toString()).toList();
+    }
+
+    if (slots is Map) {
+      // If it's a map, extract the values
+      return slots.values.map((e) => e.toString()).toList();
+    }
+
+    return ['9:00 AM', '10:00 AM', '11:00 AM'];
   }
 
   void _processDoctorData(List<QueryDocumentSnapshot> docs) {
@@ -355,17 +376,16 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         reviewCount: data['reviewCount'] ?? 0,
         experience: data['experience'] ?? 'N/A',
         imageUrl: data['profileImage'] ?? '',
-        availableSlots: (data['availableSlots'] as List<dynamic>?)
-            ?.map((e) => e.toString())
-            .toList() ??
-            ['9:00 AM', '10:00 AM', '11:00 AM'],
-        consultationFee: (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
+        availableSlots: _parseAvailableSlots(data['availableSlots']),
+        consultationFee:
+            (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
         isAvailableToday: data['isAvailableToday'] ?? true,
         about: data['about'] ?? 'Experienced medical professional.',
-        qualifications: (data['qualification'] as String?)
-            ?.split(',')
-            .map((q) => q.trim())
-            .toList() ??
+        qualifications:
+            (data['qualification'] as String?)
+                ?.split(',')
+                .map((q) => q.trim())
+                .toList() ??
             ['MBBS'],
         latitude: (data['latitude'] as num?)?.toDouble(),
         longitude: (data['longitude'] as num?)?.toDouble(),
@@ -400,11 +420,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   void _filterDoctors() {
     setState(() {
       final List<Doctor> tempFilteredList = _allDoctors.where((doctor) {
-        bool matchesSearch = _searchController.text.isEmpty ||
-            doctor.name.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-            doctor.specialization.toLowerCase().contains(_searchController.text.toLowerCase()) ||
-            doctor.hospital.toLowerCase().contains(_searchController.text.toLowerCase());
-        bool matchesSpecialization = _selectedSpecialization == 'All' ||
+        bool matchesSearch =
+            _searchController.text.isEmpty ||
+            doctor.name.toLowerCase().contains(
+              _searchController.text.toLowerCase(),
+            ) ||
+            doctor.specialization.toLowerCase().contains(
+              _searchController.text.toLowerCase(),
+            ) ||
+            doctor.hospital.toLowerCase().contains(
+              _searchController.text.toLowerCase(),
+            );
+        bool matchesSpecialization =
+            _selectedSpecialization == 'All' ||
             doctor.specialization == _selectedSpecialization;
         bool matchesLocation =
             _selectedLocation == 'All' || doctor.location == _selectedLocation;
@@ -458,7 +486,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       });
 
       // Combine the lists in the desired order
-      _filteredDoctors = [...sameCityDoctors, ...nearbyCityDoctors, ...otherDoctors];
+      _filteredDoctors = [
+        ...sameCityDoctors,
+        ...nearbyCityDoctors,
+        ...otherDoctors,
+      ];
     });
   }
 
@@ -590,12 +622,13 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _buildHeaderIconButton(
                       Icons.chat_bubble_outline_rounded,
                       const Color(0xFFFF6B9D),
-                          () {
+                      () {
                         // START OF CHATBOT INTEGRATION
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const ChatbotScreen()),
+                            builder: (_) => const ChatbotScreen(),
+                          ),
                         );
                         // END OF CHATBOT INTEGRATION
                       },
@@ -604,11 +637,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     _buildHeaderIconButton(
                       Icons.person_outline_rounded,
                       primaryBlue,
-                          () {
+                      () {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                              builder: (_) => const ProfileScreen()),
+                            builder: (_) => const ProfileScreen(),
+                          ),
                         );
                       },
                     ),
@@ -622,7 +656,11 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     );
   }
 
-  Widget _buildHeaderIconButton(IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildHeaderIconButton(
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Container(
       width: 48,
       height: 48,
@@ -700,10 +738,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         decoration: BoxDecoration(
           color: Colors.white,
           borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: primaryBlue.withOpacity(0.3),
-            width: 1.5,
-          ),
+          border: Border.all(color: primaryBlue.withOpacity(0.3), width: 1.5),
           boxShadow: [
             BoxShadow(
               color: primaryBlue.withOpacity(0.1),
@@ -717,30 +752,23 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           style: const TextStyle(fontSize: 16),
           decoration: InputDecoration(
             hintText: 'Search for $_currentSearchOption',
-            hintStyle: TextStyle(
-              color: Colors.grey[400],
-              fontSize: 15,
-            ),
+            hintStyle: TextStyle(color: Colors.grey[400], fontSize: 15),
             prefixIcon: Padding(
               padding: const EdgeInsets.all(14),
-              child: Icon(
-                Icons.search_rounded,
-                color: primaryBlue,
-                size: 22,
-              ),
+              child: Icon(Icons.search_rounded, color: primaryBlue, size: 22),
             ),
             suffixIcon: _searchController.text.isNotEmpty
                 ? IconButton(
-              icon: Icon(
-                Icons.close_rounded,
-                color: Colors.grey[400],
-                size: 20,
-              ),
-              onPressed: () {
-                _searchController.clear();
-                _filterDoctors();
-              },
-            )
+                    icon: Icon(
+                      Icons.close_rounded,
+                      color: Colors.grey[400],
+                      size: 20,
+                    ),
+                    onPressed: () {
+                      _searchController.clear();
+                      _filterDoctors();
+                    },
+                  )
                 : null,
             border: InputBorder.none,
             contentPadding: const EdgeInsets.symmetric(
@@ -776,8 +804,10 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 ),
               ),
               Container(
-                padding:
-                const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 10,
+                  vertical: 4,
+                ),
                 decoration: BoxDecoration(
                   color: primaryBlue,
                   borderRadius: BorderRadius.circular(12),
@@ -830,12 +860,12 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
   }
 
   Widget _buildSpecialtyCard(
-      String specialty,
-      IconData icon,
-      Color color,
-      Color lightColor,
-      int doctorCount,
-      ) {
+    String specialty,
+    IconData icon,
+    Color color,
+    Color lightColor,
+    int doctorCount,
+  ) {
     final bool isSelected = _selectedSpecialization == specialty;
 
     return GestureDetector(
@@ -908,6 +938,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       ),
     );
   }
+
   Widget _buildMoreCard() {
     return GestureDetector(
       onTap: () {
@@ -967,10 +998,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(40),
-          child: CircularProgressIndicator(
-            strokeWidth: 3,
-            color: primaryBlue,
-          ),
+          child: CircularProgressIndicator(strokeWidth: 3, color: primaryBlue),
         ),
       );
     }
@@ -1038,15 +1066,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
         children: [
           Container(
             padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: lightBlue,
-              shape: BoxShape.circle,
-            ),
-            child: Icon(
-              Icons.search_off_rounded,
-              size: 48,
-              color: primaryBlue,
-            ),
+            decoration: BoxDecoration(color: lightBlue, shape: BoxShape.circle),
+            child: Icon(Icons.search_off_rounded, size: 48, color: primaryBlue),
           ),
           const SizedBox(height: 16),
           Text(
@@ -1060,10 +1081,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
           const SizedBox(height: 8),
           Text(
             'Try adjusting your search or filters',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.grey[600],
-            ),
+            style: TextStyle(fontSize: 14, color: Colors.grey[600]),
             textAlign: TextAlign.center,
           ),
         ],
@@ -1087,9 +1105,7 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
       child: Card(
         margin: const EdgeInsets.only(bottom: 16),
         elevation: 6,
-        shape: RoundedRectangleBorder(
-          borderRadius: BorderRadius.circular(20),
-        ),
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
         color: Colors.white,
         child: Padding(
           padding: const EdgeInsets.all(16),
@@ -1102,18 +1118,20 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                 decoration: BoxDecoration(
                   borderRadius: BorderRadius.circular(16),
                   border: Border.all(
-                      color: specialtyColor.withOpacity(0.2), width: 1.5),
+                    color: specialtyColor.withOpacity(0.2),
+                    width: 1.5,
+                  ),
                 ),
                 child: doctor.imageUrl.isNotEmpty
                     ? ClipRRect(
-                  borderRadius: BorderRadius.circular(16),
-                  child: Image.network(
-                    doctor.imageUrl,
-                    fit: BoxFit.cover,
-                    errorBuilder: (context, error, stackTrace) =>
-                        _buildDoctorInitial(doctor.name, specialtyColor),
-                  ),
-                )
+                        borderRadius: BorderRadius.circular(16),
+                        child: Image.network(
+                          doctor.imageUrl,
+                          fit: BoxFit.cover,
+                          errorBuilder: (context, error, stackTrace) =>
+                              _buildDoctorInitial(doctor.name, specialtyColor),
+                        ),
+                      )
                     : _buildDoctorInitial(doctor.name, specialtyColor),
               ),
               const SizedBox(width: 16),
@@ -1146,13 +1164,19 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                     const SizedBox(height: 8),
                     Row(
                       children: [
-                        Icon(Icons.location_on_rounded,
-                            color: Colors.grey[400], size: 16),
+                        Icon(
+                          Icons.location_on_rounded,
+                          color: Colors.grey[400],
+                          size: 16,
+                        ),
                         const SizedBox(width: 4),
                         Expanded(
                           child: Text(
                             doctor.hospital,
-                            style: TextStyle(fontSize: 13, color: Colors.grey[600]),
+                            style: TextStyle(
+                              fontSize: 13,
+                              color: Colors.grey[600],
+                            ),
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
                           ),
@@ -1175,7 +1199,8 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                         Navigator.push(
                           context,
                           MaterialPageRoute(
-                            builder: (_) => BookAppointmentScreen(doctor: doctor),
+                            builder: (_) =>
+                                BookAppointmentScreen(doctor: doctor),
                           ),
                         );
                       },
@@ -1189,7 +1214,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
                       child: const Text(
                         'Book',
                         style: TextStyle(
-                            color: Colors.white, fontWeight: FontWeight.bold),
+                          color: Colors.white,
+                          fontWeight: FontWeight.bold,
+                        ),
                       ),
                     ),
                   ),
@@ -1250,8 +1277,9 @@ class _HomeScreenState extends State<HomeScreen> with TickerProviderStateMixin {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
       decoration: BoxDecoration(
-        color:
-        isAvailable ? Colors.green.withOpacity(0.1) : Colors.grey.withOpacity(0.1),
+        color: isAvailable
+            ? Colors.green.withOpacity(0.1)
+            : Colors.grey.withOpacity(0.1),
         borderRadius: BorderRadius.circular(10),
       ),
       child: Row(

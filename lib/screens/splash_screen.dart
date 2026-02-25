@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'dart:async';
 
 class SplashScreen extends StatefulWidget {
   @override
@@ -16,10 +15,10 @@ class _SplashScreenState extends State<SplashScreen>
   void initState() {
     super.initState();
     _animationController = AnimationController(
-      duration: Duration(seconds: 5),
+      duration: Duration(seconds: 2),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 5.0).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
@@ -27,10 +26,6 @@ class _SplashScreenState extends State<SplashScreen>
     );
 
     _animationController.forward();
-
-    Timer(Duration(seconds: 3), () {
-      Navigator.pushReplacementNamed(context, '/login');
-    });
   }
 
   @override
@@ -138,7 +133,9 @@ class _SplashScreenState extends State<SplashScreen>
                 child: Container(
                   padding: EdgeInsets.all(16),
                   child: CircularProgressIndicator(
-                    valueColor: AlwaysStoppedAnimation<Color>(Color(0xFF4A90E2)),
+                    valueColor: AlwaysStoppedAnimation<Color>(
+                      Color(0xFF4A90E2),
+                    ),
                     strokeWidth: 3,
                   ),
                 ),

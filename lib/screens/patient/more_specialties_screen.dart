@@ -96,29 +96,34 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
       final List<Doctor> fetchedDoctors = [];
       for (var doc in snapshot.docs) {
         final data = doc.data() as Map<String, dynamic>;
-        fetchedDoctors.add(Doctor(
-          id: doc.id,
-          name: data['name'] ?? 'N/A',
-          specialization: data['specialty'] ?? 'N/A',
-          hospital: data['clinicName'] ?? 'N/A',
-          location: data['location'] ?? 'N/A',
-          rating: (data['rating'] as num?)?.toDouble() ?? 4.0,
-          reviewCount: data['reviewCount'] ?? 0,
-          experience: data['experience'] ?? 'N/A',
-          imageUrl: data['profileImage'] ?? '',
-          availableSlots: (data['availableSlots'] as List<dynamic>?)
-              ?.map((e) => e.toString())
-              .toList() ??
-              ['9:00 AM', '10:00 AM', '11:00 AM'],
-          consultationFee: (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
-          isAvailableToday: data['isAvailableToday'] ?? true,
-          about: data['about'] ?? 'Experienced medical professional.',
-          qualifications: (data['qualification'] as String?)
-              ?.split(',')
-              .map((q) => q.trim())
-              .toList() ??
-              [],
-        ));
+        fetchedDoctors.add(
+          Doctor(
+            id: doc.id,
+            name: data['name'] ?? 'N/A',
+            specialization: data['specialty'] ?? 'N/A',
+            hospital: data['clinicName'] ?? 'N/A',
+            location: data['location'] ?? 'N/A',
+            rating: (data['rating'] as num?)?.toDouble() ?? 4.0,
+            reviewCount: data['reviewCount'] ?? 0,
+            experience: data['experience'] ?? 'N/A',
+            imageUrl: data['profileImage'] ?? '',
+            availableSlots:
+                (data['availableSlots'] as List<dynamic>?)
+                    ?.map((e) => e.toString())
+                    .toList() ??
+                ['9:00 AM', '10:00 AM', '11:00 AM'],
+            consultationFee:
+                (data['consultationFees'] as num?)?.toDouble() ?? 500.0,
+            isAvailableToday: data['isAvailableToday'] ?? true,
+            about: data['about'] ?? 'Experienced medical professional.',
+            qualifications:
+                (data['qualification'] as String?)
+                    ?.split(',')
+                    .map((q) => q.trim())
+                    .toList() ??
+                [],
+          ),
+        );
       }
 
       setState(() {
@@ -132,7 +137,9 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
           content: Text('Error loading doctors'),
           backgroundColor: Colors.red.shade400,
           behavior: SnackBarBehavior.floating,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(10)),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(10),
+          ),
         ),
       );
     } finally {
@@ -164,7 +171,11 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
             borderRadius: BorderRadius.circular(12),
           ),
           child: IconButton(
-            icon: const Icon(Icons.arrow_back_ios, color: Colors.white, size: 18),
+            icon: const Icon(
+              Icons.arrow_back_ios,
+              color: Colors.white,
+              size: 18,
+            ),
             onPressed: () => Navigator.pop(context),
           ),
         ),
@@ -203,21 +214,26 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
                     decoration: BoxDecoration(
                       gradient: isSelected
                           ? LinearGradient(
-                        begin: Alignment.topLeft,
-                        end: Alignment.bottomRight,
-                        colors: [Colors.white, Colors.white.withOpacity(0.9)],
-                      )
+                              begin: Alignment.topLeft,
+                              end: Alignment.bottomRight,
+                              colors: [
+                                Colors.white,
+                                Colors.white.withOpacity(0.9),
+                              ],
+                            )
                           : null,
                       color: isSelected ? null : Colors.white.withOpacity(0.2),
                       borderRadius: BorderRadius.circular(20),
-                      boxShadow: isSelected ? [
-                        BoxShadow(
-                          color: Colors.white.withOpacity(0.3),
-                          spreadRadius: 2,
-                          blurRadius: 8,
-                          offset: const Offset(0, 4),
-                        ),
-                      ] : [],
+                      boxShadow: isSelected
+                          ? [
+                              BoxShadow(
+                                color: Colors.white.withOpacity(0.3),
+                                spreadRadius: 2,
+                                blurRadius: 8,
+                                offset: const Offset(0, 4),
+                              ),
+                            ]
+                          : [],
                     ),
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
@@ -281,15 +297,18 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
                 prefixIcon: Icon(Icons.search, color: primaryBlue),
                 suffixIcon: _searchController.text.isNotEmpty
                     ? IconButton(
-                  icon: const Icon(Icons.clear),
-                  onPressed: () {
-                    _searchController.clear();
-                    _filterDoctors();
-                  },
-                )
+                        icon: const Icon(Icons.clear),
+                        onPressed: () {
+                          _searchController.clear();
+                          _filterDoctors();
+                        },
+                      )
                     : null,
                 border: InputBorder.none,
-                contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
             ),
           ),
@@ -297,91 +316,91 @@ class _MoreSpecialtiesScreenState extends State<MoreSpecialtiesScreen>
           Expanded(
             child: _isLoadingDoctors
                 ? const Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  CircularProgressIndicator(),
-                  SizedBox(height: 16),
-                  Text(
-                    'Finding the best doctors for you...',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        CircularProgressIndicator(),
+                        SizedBox(height: 16),
+                        Text(
+                          'Finding the best doctors for you...',
+                          style: TextStyle(fontSize: 16, color: Colors.grey),
+                        ),
+                      ],
                     ),
-                  ),
-                ],
-              ),
-            )
+                  )
                 : _filteredDoctors.isEmpty
                 ? Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Container(
-                    width: 100,
-                    height: 100,
-                    decoration: BoxDecoration(
-                      color: Colors.grey.withOpacity(0.1),
-                      shape: BoxShape.circle,
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 100,
+                          height: 100,
+                          decoration: BoxDecoration(
+                            color: Colors.grey.withOpacity(0.1),
+                            shape: BoxShape.circle,
+                          ),
+                          child: Icon(
+                            Icons.search_off,
+                            size: 50,
+                            color: Colors.grey[400],
+                          ),
+                        ),
+                        const SizedBox(height: 24),
+                        Text(
+                          'No doctors found',
+                          style: TextStyle(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.grey[600],
+                          ),
+                        ),
+                        const SizedBox(height: 8),
+                        Text(
+                          'Try searching with different keywords',
+                          style: TextStyle(
+                            fontSize: 16,
+                            color: Colors.grey[500],
+                          ),
+                        ),
+                      ],
                     ),
-                    child: Icon(
-                      Icons.search_off,
-                      size: 50,
-                      color: Colors.grey[400],
-                    ),
-                  ),
-                  const SizedBox(height: 24),
-                  Text(
-                    'No doctors found',
-                    style: TextStyle(
-                      fontSize: 20,
-                      fontWeight: FontWeight.w600,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Try searching with different keywords',
-                    style: TextStyle(
-                      fontSize: 16,
-                      color: Colors.grey[500],
-                    ),
-                  ),
-                ],
-              ),
-            )
+                  )
                 : ListView.builder(
-              padding: const EdgeInsets.symmetric(horizontal: 16),
-              itemCount: _filteredDoctors.length,
-              itemBuilder: (context, index) {
-                final doctor = _filteredDoctors[index];
-                return SlideTransition(
-                  position: Tween<Offset>(
-                    begin: const Offset(1, 0),
-                    end: Offset.zero,
-                  ).animate(CurvedAnimation(
-                    parent: _animationController,
-                    curve: Interval(
-                      (index * 0.1).clamp(0.0, 1.0),
-                      ((index * 0.1) + 0.3).clamp(0.0, 1.0),
-                      curve: Curves.easeOutCubic,
-                    ),
-                  )),
-                  child: SimpleDoctorCard(
-                    doctor: doctor,
-                    onBookPressed: () {
-                      Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) =>
-                              BookAppointmentScreen(doctor: doctor),
+                    padding: const EdgeInsets.symmetric(horizontal: 16),
+                    itemCount: _filteredDoctors.length,
+                    itemBuilder: (context, index) {
+                      final doctor = _filteredDoctors[index];
+                      return SlideTransition(
+                        position:
+                            Tween<Offset>(
+                              begin: const Offset(1, 0),
+                              end: Offset.zero,
+                            ).animate(
+                              CurvedAnimation(
+                                parent: _animationController,
+                                curve: Interval(
+                                  (index * 0.1).clamp(0.0, 1.0),
+                                  ((index * 0.1) + 0.3).clamp(0.0, 1.0),
+                                  curve: Curves.easeOutCubic,
+                                ),
+                              ),
+                            ),
+                        child: SimpleDoctorCard(
+                          doctor: doctor,
+                          onBookPressed: () {
+                            Navigator.push(
+                              context,
+                              MaterialPageRoute(
+                                builder: (context) =>
+                                    BookAppointmentScreen(doctor: doctor),
+                              ),
+                            );
+                          },
                         ),
                       );
                     },
                   ),
-                );
-              },
-            ),
           ),
         ],
       ),
@@ -426,20 +445,17 @@ class SimpleDoctorCard extends StatelessWidget {
             height: 60,
             decoration: BoxDecoration(
               borderRadius: BorderRadius.circular(12),
-              border: Border.all(
-                color: primaryBlue.withOpacity(0.2),
-                width: 1,
-              ),
+              border: Border.all(color: primaryBlue.withOpacity(0.2), width: 1),
             ),
             child: ClipRRect(
               borderRadius: BorderRadius.circular(11),
               child: doctor.imageUrl.isNotEmpty
                   ? Image.network(
-                doctor.imageUrl,
-                fit: BoxFit.cover,
-                errorBuilder: (context, error, stackTrace) =>
-                    _buildGradientAvatar(),
-              )
+                      doctor.imageUrl,
+                      fit: BoxFit.cover,
+                      errorBuilder: (context, error, stackTrace) =>
+                          _buildGradientAvatar(),
+                    )
                   : _buildGradientAvatar(),
             ),
           ),
@@ -471,11 +487,7 @@ class SimpleDoctorCard extends StatelessWidget {
                 const SizedBox(height: 4),
                 Row(
                   children: [
-                    Icon(
-                      Icons.star,
-                      size: 16,
-                      color: Colors.amber,
-                    ),
+                    Icon(Icons.star, size: 16, color: Colors.amber),
                     const SizedBox(width: 4),
                     Text(
                       '${doctor.rating}',
@@ -487,10 +499,7 @@ class SimpleDoctorCard extends StatelessWidget {
                     ),
                     Text(
                       ' (${doctor.reviewCount})',
-                      style: TextStyle(
-                        fontSize: 13,
-                        color: Colors.grey[600],
-                      ),
+                      style: TextStyle(fontSize: 13, color: Colors.grey[600]),
                     ),
                   ],
                 ),
@@ -510,7 +519,10 @@ class SimpleDoctorCard extends StatelessWidget {
                 borderRadius: BorderRadius.circular(8),
               ),
               padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-              textStyle: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600),
+              textStyle: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+              ),
             ),
             child: const Text('Book Now'),
           ),
@@ -525,18 +537,11 @@ class SimpleDoctorCard extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [
-            const Color(0xFF2196F3),
-            const Color(0xFF00BCD4),
-          ],
+          colors: [const Color(0xFF2196F3), const Color(0xFF00BCD4)],
         ),
       ),
       child: const Center(
-        child: Icon(
-          Icons.person,
-          color: Colors.white,
-          size: 30,
-        ),
+        child: Icon(Icons.person, color: Colors.white, size: 30),
       ),
     );
   }

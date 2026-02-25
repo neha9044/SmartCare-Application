@@ -88,7 +88,10 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
     }
   }
 
-  Future<void> _updateAppointmentStatus(String docId, AppointmentStatus newStatus) async {
+  Future<void> _updateAppointmentStatus(
+    String docId,
+    AppointmentStatus newStatus,
+  ) async {
     try {
       await FirebaseFirestore.instance
           .collection('appointments')
@@ -109,7 +112,9 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
             ),
             backgroundColor: Colors.green[600],
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -127,7 +132,9 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
             ),
             backgroundColor: Colors.red[600],
             behavior: SnackBarBehavior.floating,
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(12),
+            ),
             margin: const EdgeInsets.all(16),
           ),
         );
@@ -166,10 +173,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                   gradient: LinearGradient(
                     begin: Alignment.topLeft,
                     end: Alignment.bottomRight,
-                    colors: [
-                      primaryBlue,
-                      primaryBlue.withBlue(200),
-                    ],
+                    colors: [primaryBlue, primaryBlue.withBlue(200)],
                   ),
                 ),
               ),
@@ -186,11 +190,9 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                   // Selected date card - reduced size
                   _buildDateCard(),
                   const SizedBox(height: 12), // Reduced from 16
-
                   // Calendar section - removed title
                   _buildCalendarSection(now, nextMonth),
                   const SizedBox(height: 16), // Reduced from 24
-
                   // Appointments section
                   _buildAppointmentsSection(),
                 ],
@@ -263,7 +265,10 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
             valueListenable: _selectedAppointments,
             builder: (context, appointments, _) {
               return Container(
-                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4), // Reduced padding
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 8,
+                  vertical: 4,
+                ), // Reduced padding
                 decoration: BoxDecoration(
                   color: appointments.isEmpty ? Colors.grey[100] : pastelGreen,
                   borderRadius: BorderRadius.circular(16), // Reduced from 20
@@ -273,7 +278,9 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                   style: TextStyle(
                     fontSize: 11, // Reduced from 12
                     fontWeight: FontWeight.w600,
-                    color: appointments.isEmpty ? Colors.grey[600] : Colors.green[700],
+                    color: appointments.isEmpty
+                        ? Colors.grey[600]
+                        : Colors.green[700],
                   ),
                 ),
               );
@@ -326,7 +333,11 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
               color: lightBlue,
               borderRadius: BorderRadius.circular(6), // Reduced from 8
             ),
-            child: Icon(Icons.chevron_left, color: primaryBlue, size: 16), // Reduced from 18
+            child: Icon(
+              Icons.chevron_left,
+              color: primaryBlue,
+              size: 16,
+            ), // Reduced from 18
           ),
           rightChevronIcon: Container(
             padding: const EdgeInsets.all(6), // Reduced from 8
@@ -334,10 +345,16 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
               color: lightBlue,
               borderRadius: BorderRadius.circular(6), // Reduced from 8
             ),
-            child: Icon(Icons.chevron_right, color: primaryBlue, size: 16), // Reduced from 18
+            child: Icon(
+              Icons.chevron_right,
+              color: primaryBlue,
+              size: 16,
+            ), // Reduced from 18
           ),
           headerMargin: const EdgeInsets.only(bottom: 12), // Reduced from 16
-          headerPadding: const EdgeInsets.symmetric(horizontal: 12), // Reduced from 16
+          headerPadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+          ), // Reduced from 16
         ),
         daysOfWeekStyle: DaysOfWeekStyle(
           weekdayStyle: TextStyle(
@@ -389,7 +406,9 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
             color: Colors.grey[400],
             fontSize: 14, // Reduced from 15
           ),
-          tablePadding: const EdgeInsets.symmetric(horizontal: 12), // Reduced from 16
+          tablePadding: const EdgeInsets.symmetric(
+            horizontal: 12,
+          ), // Reduced from 16
           cellMargin: const EdgeInsets.all(4), // Reduced from 6
         ),
         eventLoader: (day) => [],
@@ -455,10 +474,7 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
           child: Column(
             mainAxisAlignment: MainAxisAlignment.center,
             children: [
-              CircularProgressIndicator(
-                color: primaryBlue,
-                strokeWidth: 3,
-              ),
+              CircularProgressIndicator(color: primaryBlue, strokeWidth: 3),
               const SizedBox(height: 12), // Reduced from 16
               Text(
                 'Loading appointments...',
@@ -531,9 +547,16 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
     );
   }
 
-  Widget _buildAppointmentCard(QueryDocumentSnapshot appointment, Map<String, dynamic> data) {
+  Widget _buildAppointmentCard(
+    QueryDocumentSnapshot appointment,
+    Map<String, dynamic> data,
+  ) {
     return Container(
-      margin: const EdgeInsets.only(bottom: 8, left: 12, right: 12), // Reduced margins
+      margin: const EdgeInsets.only(
+        bottom: 8,
+        left: 12,
+        right: 12,
+      ), // Reduced margins
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(12), // Reduced from 16
@@ -593,7 +616,6 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                   ),
                 ),
                 const SizedBox(width: 12), // Reduced from 16
-
                 // Patient info - flexible to prevent overflow
                 Expanded(
                   flex: 3,
@@ -619,7 +641,9 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                             padding: const EdgeInsets.all(3), // Reduced from 4
                             decoration: BoxDecoration(
                               color: accentBlue.withOpacity(0.1),
-                              borderRadius: BorderRadius.circular(4), // Reduced from 6
+                              borderRadius: BorderRadius.circular(
+                                4,
+                              ), // Reduced from 6
                             ),
                             child: Icon(
                               Icons.access_time_rounded,
@@ -665,7 +689,10 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
                     color: Colors.transparent,
                     child: InkWell(
                       borderRadius: BorderRadius.circular(18),
-                      onTap: () => _updateAppointmentStatus(appointment.id, AppointmentStatus.completed),
+                      onTap: () => _updateAppointmentStatus(
+                        appointment.id,
+                        AppointmentStatus.completed,
+                      ),
                       child: Icon(
                         Icons.check_rounded,
                         size: 20,
@@ -685,8 +712,18 @@ class _DoctorScheduleScreenState extends State<DoctorScheduleScreen> {
   String _getFormattedDate(DateTime? date) {
     if (date == null) return '';
     const months = [
-      'January', 'February', 'March', 'April', 'May', 'June',
-      'July', 'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     return '${date.day} ${months[date.month - 1]} ${date.year}';
   }

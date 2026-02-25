@@ -41,7 +41,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   void initState() {
     super.initState();
     _dateController = TextEditingController(
-        text: "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}");
+      text:
+          "${DateTime.now().day}/${DateTime.now().month}/${DateTime.now().year}",
+    );
     _diagnosisController = TextEditingController();
     _followUpDateController = TextEditingController();
 
@@ -89,7 +91,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
 
       // Get current position and convert to placemark
       Position position = await Geolocator.getCurrentPosition(
-          desiredAccuracy: LocationAccuracy.high);
+        desiredAccuracy: LocationAccuracy.high,
+      );
       List<Placemark> placemarks = await placemarkFromCoordinates(
         position.latitude,
         position.longitude,
@@ -104,9 +107,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         _currentCity = null;
       }
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Location error: $e")),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Location error: $e")));
     } finally {
       setState(() {
         _isFetchingLocation = false;
@@ -144,7 +147,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
     );
     if (picked != null) {
       setState(() {
-        _followUpDateController.text = "${picked.day}/${picked.month}/${picked.year}";
+        _followUpDateController.text =
+            "${picked.day}/${picked.month}/${picked.year}";
       });
     }
   }
@@ -165,7 +169,8 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         "doctorId": FirebaseAuth.instance.currentUser!.uid,
         "doctorName": widget.doctorDetails['name'] ?? "Dr. Alex Chen",
         "doctorSpecialty": widget.doctorDetails['specialty'] ?? "APOLLO DOCTOR",
-        "clinicAddress": widget.doctorDetails['address'] ?? "123 Anywhere St., Any City",
+        "clinicAddress":
+            widget.doctorDetails['address'] ?? "123 Anywhere St., Any City",
         "patientId": widget.patientId,
         "patientName": widget.patientName,
         "date": _dateController.text,
@@ -179,7 +184,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
   void _showPharmacySelectionDialog() async {
     if (!_formKey.currentState!.validate()) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Please fill in the prescription details first.')),
+        const SnackBar(
+          content: Text('Please fill in the prescription details first.'),
+        ),
       );
       return;
     }
@@ -214,16 +221,22 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                 const SizedBox(height: 12),
                 Expanded(
                   child: StreamBuilder<QuerySnapshot>(
-                    stream: FirebaseFirestore.instance.collection('pharmacies').snapshots(),
+                    stream: FirebaseFirestore.instance
+                        .collection('pharmacies')
+                        .snapshots(),
                     builder: (context, snapshot) {
                       if (snapshot.connectionState == ConnectionState.waiting) {
                         return const Center(child: CircularProgressIndicator());
                       }
                       if (snapshot.hasError) {
-                        return const Center(child: Text('Error loading pharmacies.'));
+                        return const Center(
+                          child: Text('Error loading pharmacies.'),
+                        );
                       }
                       if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
-                        return const Center(child: Text('No pharmacies found.'));
+                        return const Center(
+                          child: Text('No pharmacies found.'),
+                        );
                       }
 
                       final allPharmacies = snapshot.data!.docs;
@@ -235,7 +248,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                       }).toList();
 
                       if (filteredPharmacies.isEmpty) {
-                        return const Center(child: Text('No matching pharmacies found.'));
+                        return const Center(
+                          child: Text('No matching pharmacies found.'),
+                        );
                       }
 
                       return ListView.builder(
@@ -243,13 +258,21 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                         itemCount: filteredPharmacies.length,
                         itemBuilder: (context, index) {
                           final pharmacyDoc = filteredPharmacies[index];
-                          final pharmacyData = pharmacyDoc.data() as Map<String, dynamic>;
+                          final pharmacyData =
+                              pharmacyDoc.data() as Map<String, dynamic>;
                           return ListTile(
-                            title: Text(pharmacyData['name'] ?? 'Unknown Pharmacy'),
-                            subtitle: Text(pharmacyData['location'] ?? 'No address'),
+                            title: Text(
+                              pharmacyData['name'] ?? 'Unknown Pharmacy',
+                            ),
+                            subtitle: Text(
+                              pharmacyData['location'] ?? 'No address',
+                            ),
                             onTap: () {
                               Navigator.of(context).pop();
-                              _showConfirmationDialog(pharmacyDoc.id, pharmacyData['name'] ?? 'Unknown Pharmacy');
+                              _showConfirmationDialog(
+                                pharmacyDoc.id,
+                                pharmacyData['name'] ?? 'Unknown Pharmacy',
+                              );
                             },
                           );
                         },
@@ -277,7 +300,9 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       builder: (context) {
         return AlertDialog(
           title: const Text('Confirm Action'),
-          content: Text('Do you confirm to send the prescription to $pharmacyName?'),
+          content: Text(
+            'Do you confirm to send the prescription to $pharmacyName?',
+          ),
           actions: [
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
@@ -322,11 +347,15 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
       });
 
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Prescription sent to pharmacy successfully!')),
+        const SnackBar(
+          content: Text('Prescription sent to pharmacy successfully!'),
+        ),
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to send prescription. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to send prescription. Please try again.'),
+        ),
       );
     }
   }
@@ -384,7 +413,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                       label: const Text("Add", style: TextStyle(fontSize: 12)),
                       style: TextButton.styleFrom(
                         foregroundColor: const Color(0xFF1E88E5),
-                        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
                       ),
                     ),
                   ],
@@ -402,16 +434,17 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     ),
                     child: _medicineEntries.isEmpty
                         ? const Center(
-                      child: Text(
-                        "No medications added",
-                        style: TextStyle(color: Colors.grey),
-                      ),
-                    )
+                            child: Text(
+                              "No medications added",
+                              style: TextStyle(color: Colors.grey),
+                            ),
+                          )
                         : ListView.builder(
-                      padding: const EdgeInsets.all(8),
-                      itemCount: _medicineEntries.length,
-                      itemBuilder: (context, index) => _buildCompactMedicineForm(index),
-                    ),
+                            padding: const EdgeInsets.all(8),
+                            itemCount: _medicineEntries.length,
+                            itemBuilder: (context, index) =>
+                                _buildCompactMedicineForm(index),
+                          ),
                   ),
                 ),
                 const SizedBox(height: 16),
@@ -496,7 +529,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
         prefixIcon: prefixIcon != null
             ? Icon(prefixIcon, size: 18, color: const Color(0xFF1E88E5))
             : null,
-        contentPadding: const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
+        contentPadding: const EdgeInsets.symmetric(
+          horizontal: 12,
+          vertical: 12,
+        ),
         border: OutlineInputBorder(
           borderRadius: BorderRadius.circular(10),
           borderSide: BorderSide(color: Colors.grey.shade300),
@@ -534,11 +570,17 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               Expanded(
                 child: TextFormField(
                   controller: controllers['medicineName'],
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500),
+                  style: const TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w500,
+                  ),
                   decoration: InputDecoration(
                     labelText: 'Medicine Name',
                     labelStyle: const TextStyle(fontSize: 11),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 10,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -554,7 +596,11 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               if (_medicineEntries.length > 1) ...[
                 const SizedBox(width: 8),
                 IconButton(
-                  icon: const Icon(Icons.remove_circle, color: Colors.red, size: 20),
+                  icon: const Icon(
+                    Icons.remove_circle,
+                    color: Colors.red,
+                    size: 20,
+                  ),
                   onPressed: () => _removeMedicineEntry(index),
                   padding: EdgeInsets.zero,
                   constraints: const BoxConstraints(),
@@ -576,7 +622,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     hintText: '500mg, 2x daily',
                     labelStyle: const TextStyle(fontSize: 10),
                     hintStyle: const TextStyle(fontSize: 10),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -599,7 +648,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
                     hintText: '7 days',
                     labelStyle: const TextStyle(fontSize: 10),
                     hintStyle: const TextStyle(fontSize: 10),
-                    contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+                    contentPadding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 8,
+                    ),
                     border: OutlineInputBorder(
                       borderRadius: BorderRadius.circular(8),
                       borderSide: BorderSide(color: Colors.grey.shade300),
@@ -625,7 +677,10 @@ class _PrescriptionScreenState extends State<PrescriptionScreen> {
               hintText: 'After meals, with water',
               labelStyle: const TextStyle(fontSize: 10),
               hintStyle: const TextStyle(fontSize: 10),
-              contentPadding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 8,
+                vertical: 8,
+              ),
               border: OutlineInputBorder(
                 borderRadius: BorderRadius.circular(8),
                 borderSide: BorderSide(color: Colors.grey.shade300),

@@ -19,9 +19,7 @@ class ChatInboxScreen extends StatelessWidget {
     final ChatService _chatService = ChatService();
 
     return Scaffold(
-      appBar: AppBar(
-        title: const Text('Chat Inbox'),
-      ),
+      appBar: AppBar(title: const Text('Chat Inbox')),
       body: StreamBuilder<QuerySnapshot>(
         // Use the no-order method temporarily
         stream: _chatService.getDoctorChatsNoOrder(currentUser.uid),
@@ -40,7 +38,10 @@ class ChatInboxScreen extends StatelessWidget {
                   const SizedBox(height: 16),
                   const Text('Error loading chats'),
                   const SizedBox(height: 8),
-                  Text('${snapshot.error}', style: const TextStyle(fontSize: 12)),
+                  Text(
+                    '${snapshot.error}',
+                    style: const TextStyle(fontSize: 12),
+                  ),
                   const SizedBox(height: 16),
                   ElevatedButton(
                     onPressed: () {
@@ -63,8 +64,10 @@ class ChatInboxScreen extends StatelessWidget {
                   SizedBox(height: 16),
                   Text('No chats available'),
                   SizedBox(height: 8),
-                  Text('Patients will see your chat requests here',
-                      style: TextStyle(color: Colors.grey)),
+                  Text(
+                    'Patients will see your chat requests here',
+                    style: TextStyle(color: Colors.grey),
+                  ),
                 ],
               ),
             );
@@ -136,12 +139,18 @@ class ChatInboxScreen extends StatelessWidget {
                       if (createdAt != null)
                         Text(
                           'Created: ${createdAt.toDate().toString().substring(0, 16)}',
-                          style: const TextStyle(fontSize: 12, color: Colors.grey),
+                          style: const TextStyle(
+                            fontSize: 12,
+                            color: Colors.grey,
+                          ),
                         ),
                     ],
                   ),
                   trailing: status == 'pending'
-                      ? const Icon(Icons.notification_important, color: Colors.orange)
+                      ? const Icon(
+                          Icons.notification_important,
+                          color: Colors.orange,
+                        )
                       : null,
                   onTap: () {
                     Navigator.push(

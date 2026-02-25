@@ -11,7 +11,8 @@ import 'package:intl/intl.dart';
 class BookAppointmentScreen extends StatefulWidget {
   final Doctor doctor;
 
-  const BookAppointmentScreen({Key? key, required this.doctor}) : super(key: key);
+  const BookAppointmentScreen({Key? key, required this.doctor})
+    : super(key: key);
 
   @override
   _BookAppointmentScreenState createState() => _BookAppointmentScreenState();
@@ -80,7 +81,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
       if (docSnapshot.exists) {
         final data = docSnapshot.data() as Map<String, dynamic>;
-        final List<String> fetchedRanges = List<String>.from(data['availableSlots'] ?? []);
+        final List<String> fetchedRanges = List<String>.from(
+          data['availableSlots'] ?? [],
+        );
         setState(() {
           _availableSlots = _expandTimeSlots(fetchedRanges);
         });
@@ -106,7 +109,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       appBar: AppBar(
-        title: const Text('Book Appointment', style: TextStyle(color: Colors.white, fontSize: 18)),
+        title: const Text(
+          'Book Appointment',
+          style: TextStyle(color: Colors.white, fontSize: 18),
+        ),
         backgroundColor: primaryBlue,
         foregroundColor: Colors.white,
         elevation: 0,
@@ -174,7 +180,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     ),
                   ),
                   Container(
-                    padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 8,
+                      vertical: 4,
+                    ),
                     decoration: BoxDecoration(
                       color: const Color(0xFF4CAF50).withOpacity(0.1),
                       borderRadius: BorderRadius.circular(8),
@@ -227,17 +236,29 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                               IconButton(
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                                onPressed: _currentMonth.month > DateTime.now().month ||
-                                    _currentMonth.year > DateTime.now().year ? () {
-                                  setState(() {
-                                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month - 1, 1);
-                                  });
-                                } : null,
+                                onPressed:
+                                    _currentMonth.month >
+                                            DateTime.now().month ||
+                                        _currentMonth.year > DateTime.now().year
+                                    ? () {
+                                        setState(() {
+                                          _currentMonth = DateTime(
+                                            _currentMonth.year,
+                                            _currentMonth.month - 1,
+                                            1,
+                                          );
+                                        });
+                                      }
+                                    : null,
                                 icon: Icon(
                                   Icons.chevron_left,
-                                  color: (_currentMonth.month > DateTime.now().month ||
-                                      _currentMonth.year > DateTime.now().year)
-                                      ? primaryBlue : Colors.grey[400],
+                                  color:
+                                      (_currentMonth.month >
+                                              DateTime.now().month ||
+                                          _currentMonth.year >
+                                              DateTime.now().year)
+                                      ? primaryBlue
+                                      : Colors.grey[400],
                                   size: 20,
                                 ),
                               ),
@@ -254,14 +275,22 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                               IconButton(
                                 padding: EdgeInsets.zero,
                                 constraints: const BoxConstraints(),
-                                onPressed: _canGoToNextMonth() ? () {
-                                  setState(() {
-                                    _currentMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
-                                  });
-                                } : null,
+                                onPressed: _canGoToNextMonth()
+                                    ? () {
+                                        setState(() {
+                                          _currentMonth = DateTime(
+                                            _currentMonth.year,
+                                            _currentMonth.month + 1,
+                                            1,
+                                          );
+                                        });
+                                      }
+                                    : null,
                                 icon: Icon(
                                   Icons.chevron_right,
-                                  color: _canGoToNextMonth() ? primaryBlue : Colors.grey[400],
+                                  color: _canGoToNextMonth()
+                                      ? primaryBlue
+                                      : Colors.grey[400],
                                   size: 20,
                                 ),
                               ),
@@ -277,18 +306,20 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                           children: [
                             Row(
                               children: ['S', 'M', 'T', 'W', 'T', 'F', 'S']
-                                  .map((day) => Expanded(
-                                child: Center(
-                                  child: Text(
-                                    day,
-                                    style: TextStyle(
-                                      fontSize: 10,
-                                      fontWeight: FontWeight.w600,
-                                      color: Colors.grey[600],
+                                  .map(
+                                    (day) => Expanded(
+                                      child: Center(
+                                        child: Text(
+                                          day,
+                                          style: TextStyle(
+                                            fontSize: 10,
+                                            fontWeight: FontWeight.w600,
+                                            color: Colors.grey[600],
+                                          ),
+                                        ),
+                                      ),
                                     ),
-                                  ),
-                                ),
-                              ))
+                                  )
                                   .toList(),
                             ),
                             const SizedBox(height: 8),
@@ -333,47 +364,60 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                     const SizedBox(height: 12),
                     Expanded(
                       child: _availableSlots.isEmpty
-                          ? const Center(child: Text('No slots available.', style: TextStyle(fontStyle: FontStyle.italic)))
-                          : Wrap(
-                        spacing: 8.0,
-                        runSpacing: 8.0,
-                        children: _availableSlots.map((slot) { // Use the fetched slots
-                          bool isSelected = _selectedTimeSlot == slot;
-                          return GestureDetector(
-                            onTap: () {
-                              setState(() {
-                                _selectedTimeSlot = slot;
-                              });
-                            },
-                            child: Container(
-                              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-                              decoration: BoxDecoration(
-                                gradient: isSelected
-                                    ? LinearGradient(
-                                  colors: [primaryBlue, darkBlue],
-                                  begin: Alignment.topLeft,
-                                  end: Alignment.bottomRight,
-                                )
-                                    : null,
-                                color: isSelected ? null : lightBlue,
-                                borderRadius: BorderRadius.circular(12),
-                                border: Border.all(
-                                  color: isSelected ? primaryBlue : primaryBlue.withOpacity(0.3),
-                                  width: 1,
-                                ),
-                              ),
+                          ? const Center(
                               child: Text(
-                                slot,
-                                style: TextStyle(
-                                  color: isSelected ? Colors.white : primaryBlue,
-                                  fontWeight: FontWeight.w600,
-                                  fontSize: 12,
-                                ),
+                                'No slots available.',
+                                style: TextStyle(fontStyle: FontStyle.italic),
                               ),
+                            )
+                          : Wrap(
+                              spacing: 8.0,
+                              runSpacing: 8.0,
+                              children: _availableSlots.map((slot) {
+                                // Use the fetched slots
+                                bool isSelected = _selectedTimeSlot == slot;
+                                return GestureDetector(
+                                  onTap: () {
+                                    setState(() {
+                                      _selectedTimeSlot = slot;
+                                    });
+                                  },
+                                  child: Container(
+                                    padding: const EdgeInsets.symmetric(
+                                      horizontal: 16,
+                                      vertical: 8,
+                                    ),
+                                    decoration: BoxDecoration(
+                                      gradient: isSelected
+                                          ? LinearGradient(
+                                              colors: [primaryBlue, darkBlue],
+                                              begin: Alignment.topLeft,
+                                              end: Alignment.bottomRight,
+                                            )
+                                          : null,
+                                      color: isSelected ? null : lightBlue,
+                                      borderRadius: BorderRadius.circular(12),
+                                      border: Border.all(
+                                        color: isSelected
+                                            ? primaryBlue
+                                            : primaryBlue.withOpacity(0.3),
+                                        width: 1,
+                                      ),
+                                    ),
+                                    child: Text(
+                                      slot,
+                                      style: TextStyle(
+                                        color: isSelected
+                                            ? Colors.white
+                                            : primaryBlue,
+                                        fontWeight: FontWeight.w600,
+                                        fontSize: 12,
+                                      ),
+                                    ),
+                                  ),
+                                );
+                              }).toList(),
                             ),
-                          );
-                        }).toList(),
-                      ),
                     ),
                   ],
                 ),
@@ -383,9 +427,11 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             SizedBox(
               width: double.infinity,
               child: ElevatedButton(
-                onPressed: _selectedTimeSlot != null ? () {
-                  _showConfirmationDialog();
-                } : null,
+                onPressed: _selectedTimeSlot != null
+                    ? () {
+                        _showConfirmationDialog();
+                      }
+                    : null,
                 style: ElevatedButton.styleFrom(
                   backgroundColor: primaryBlue,
                   disabledBackgroundColor: Colors.grey[300],
@@ -402,7 +448,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.bold,
-                    color: _selectedTimeSlot != null ? Colors.white : Colors.grey[600],
+                    color: _selectedTimeSlot != null
+                        ? Colors.white
+                        : Colors.grey[600],
                   ),
                 ),
               ),
@@ -414,14 +462,30 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
   }
 
   bool _canGoToNextMonth() {
-    DateTime nextMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 1);
-    DateTime maxMonth = DateTime(DateTime.now().year, DateTime.now().month + 1, 1);
+    DateTime nextMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month + 1,
+      1,
+    );
+    DateTime maxMonth = DateTime(
+      DateTime.now().year,
+      DateTime.now().month + 1,
+      1,
+    );
     return nextMonth.isBefore(maxMonth) || nextMonth.isAtSameMomentAs(maxMonth);
   }
 
   Widget _buildCalendarGrid() {
-    DateTime firstDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month, 1);
-    DateTime lastDayOfMonth = DateTime(_currentMonth.year, _currentMonth.month + 1, 0);
+    DateTime firstDayOfMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month,
+      1,
+    );
+    DateTime lastDayOfMonth = DateTime(
+      _currentMonth.year,
+      _currentMonth.month + 1,
+      0,
+    );
     int firstWeekday = firstDayOfMonth.weekday % 7;
 
     List<DateTime> days = [];
@@ -448,24 +512,28 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
         bool isToday = _isSameDay(date, DateTime.now());
         bool isSelected = _isSameDay(date, _selectedDate);
-        bool isPastDate = date.isBefore(DateTime.now().subtract(const Duration(days: 1)));
+        bool isPastDate = date.isBefore(
+          DateTime.now().subtract(const Duration(days: 1)),
+        );
         bool isSelectable = !isPastDate;
 
         return GestureDetector(
-          onTap: isSelectable ? () {
-            setState(() {
-              _selectedDate = date;
-              _selectedTimeSlot = null;
-            });
-          } : null,
+          onTap: isSelectable
+              ? () {
+                  setState(() {
+                    _selectedDate = date;
+                    _selectedTimeSlot = null;
+                  });
+                }
+              : null,
           child: Container(
             decoration: BoxDecoration(
               gradient: isSelected
                   ? LinearGradient(
-                colors: [primaryBlue, darkBlue],
-                begin: Alignment.topLeft,
-                end: Alignment.bottomRight,
-              )
+                      colors: [primaryBlue, darkBlue],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    )
                   : null,
               color: isSelected
                   ? null
@@ -507,8 +575,18 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
 
   String _getMonthName(int month) {
     const months = [
-      'Jan', 'Feb', 'Mar', 'Apr', 'May', 'Jun',
-      'Jul', 'Aug', 'Sep', 'Oct', 'Nov', 'Dec'
+      'Jan',
+      'Feb',
+      'Mar',
+      'Apr',
+      'May',
+      'Jun',
+      'Jul',
+      'Aug',
+      'Sep',
+      'Oct',
+      'Nov',
+      'Dec',
     ];
     return months[month - 1];
   }
@@ -563,10 +641,22 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text('Dr. ${widget.doctor.name}', style: const TextStyle(fontSize: 12)),
-                    Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}', style: const TextStyle(fontSize: 12)),
-                    Text('$_selectedTimeSlot', style: const TextStyle(fontSize: 12)),
-                    Text('₹${widget.doctor.consultationFee.toInt()}', style: const TextStyle(fontSize: 12)),
+                    Text(
+                      'Dr. ${widget.doctor.name}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      '$_selectedTimeSlot',
+                      style: const TextStyle(fontSize: 12),
+                    ),
+                    Text(
+                      '₹${widget.doctor.consultationFee.toInt()}',
+                      style: const TextStyle(fontSize: 12),
+                    ),
                   ],
                 ),
               ),
@@ -585,7 +675,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               style: ElevatedButton.styleFrom(
                 backgroundColor: primaryBlue,
                 foregroundColor: Colors.white,
-                shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(8),
+                ),
               ),
               child: const Text('Confirm'),
             ),
@@ -624,7 +716,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
         barrierDismissible: false,
         builder: (BuildContext context) {
           return AlertDialog(
-            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(16),
+            ),
             title: const Row(
               children: [
                 Icon(Icons.check_circle, color: Color(0xFF4CAF50), size: 24),
@@ -635,7 +729,10 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
             content: Column(
               mainAxisSize: MainAxisSize.min,
               children: [
-                const Text('Your appointment has been successfully booked.', style: TextStyle(fontSize: 13)),
+                const Text(
+                  'Your appointment has been successfully booked.',
+                  style: TextStyle(fontSize: 13),
+                ),
                 const SizedBox(height: 12),
                 Container(
                   padding: const EdgeInsets.all(12),
@@ -646,11 +743,30 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
-                      Text('Dr. ${widget.doctor.name}', style: const TextStyle(fontSize: 12, fontWeight: FontWeight.w600)),
-                      Text('${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year} at $_selectedTimeSlot', style: const TextStyle(fontSize: 12)),
-                      Text('Fee: ₹${widget.doctor.consultationFee.toInt()}', style: const TextStyle(fontSize: 12)),
+                      Text(
+                        'Dr. ${widget.doctor.name}',
+                        style: const TextStyle(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                      Text(
+                        '${_selectedDate.day}/${_selectedDate.month}/${_selectedDate.year} at $_selectedTimeSlot',
+                        style: const TextStyle(fontSize: 12),
+                      ),
+                      Text(
+                        'Fee: ₹${widget.doctor.consultationFee.toInt()}',
+                        style: const TextStyle(fontSize: 12),
+                      ),
                       const SizedBox(height: 6),
-                      Text('Queue number: $queueNumber', style: TextStyle(fontWeight: FontWeight.bold, color: primaryBlue, fontSize: 12)),
+                      Text(
+                        'Queue number: $queueNumber',
+                        style: TextStyle(
+                          fontWeight: FontWeight.bold,
+                          color: primaryBlue,
+                          fontSize: 12,
+                        ),
+                      ),
                     ],
                   ),
                 ),
@@ -660,11 +776,14 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
               SizedBox(
                 width: double.infinity,
                 child: ElevatedButton(
-                  onPressed: () => Navigator.of(context).popUntil((route) => route.isFirst),
+                  onPressed: () =>
+                      Navigator.of(context).popUntil((route) => route.isFirst),
                   style: ElevatedButton.styleFrom(
                     backgroundColor: primaryBlue,
                     foregroundColor: Colors.white,
-                    shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(8),
+                    ),
                   ),
                   child: const Text('OK'),
                 ),
@@ -675,7 +794,9 @@ class _BookAppointmentScreenState extends State<BookAppointmentScreen> {
       );
     } catch (e) {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to book appointment. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to book appointment. Please try again.'),
+        ),
       );
     }
   }

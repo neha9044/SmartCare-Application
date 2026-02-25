@@ -2,7 +2,8 @@
 
 import 'package:flutter/material.dart';
 import 'package:smartcare_app/constants/colors.dart';
-import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart' as pharmacy_models;
+import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart'
+    as pharmacy_models;
 import 'package:smartcare_app/screens/pharmacy/pharmacy_orders_list.dart';
 import 'package:smartcare_app/services/location_service.dart';
 import 'package:geolocator/geolocator.dart';
@@ -38,15 +39,15 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
           .doc(_currentPharmacyId)
           .snapshots()
           .listen((snapshot) {
-        if (snapshot.exists) {
-          final data = snapshot.data();
-          if (data != null && data.containsKey('name')) {
-            setState(() {
-              _pharmacyName = data['name'];
-            });
-          }
-        }
-      });
+            if (snapshot.exists) {
+              final data = snapshot.data();
+              if (data != null && data.containsKey('name')) {
+                setState(() {
+                  _pharmacyName = data['name'];
+                });
+              }
+            }
+          });
     }
   }
 
@@ -119,22 +120,30 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                       }
                       final orders = snapshot.data?.docs ?? [];
 
-                      final pendingOrders = orders.where((order) => order['status'] == 'pending').toList();
-                      final completedOrders = orders.where((order) => order['status'] == 'completed').toList();
-                      final pickedUpOrders = orders.where((order) => order['status'] == 'picked_up').toList();
-                      final canceledOrders = orders.where((order) => order['status'] == 'canceled').toList();
+                      final pendingOrders = orders
+                          .where((order) => order['status'] == 'pending')
+                          .toList();
+                      final completedOrders = orders
+                          .where((order) => order['status'] == 'completed')
+                          .toList();
+                      final pickedUpOrders = orders
+                          .where((order) => order['status'] == 'picked_up')
+                          .toList();
+                      final canceledOrders = orders
+                          .where((order) => order['status'] == 'canceled')
+                          .toList();
 
                       return _buildOrderBlocks(
-                          pendingOrders.length,
-                          completedOrders.length,
-                          pickedUpOrders.length,
-                          canceledOrders.length,
-                          {
-                            'pending': pendingOrders,
-                            'completed': completedOrders,
-                            'picked_up': pickedUpOrders,
-                            'canceled': canceledOrders,
-                          }
+                        pendingOrders.length,
+                        completedOrders.length,
+                        pickedUpOrders.length,
+                        canceledOrders.length,
+                        {
+                          'pending': pendingOrders,
+                          'completed': completedOrders,
+                          'picked_up': pickedUpOrders,
+                          'canceled': canceledOrders,
+                        },
                       );
                     },
                   ),
@@ -164,11 +173,19 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
                       children: [
                         TextSpan(
                           text: 'Hello, ',
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.w400, color: Colors.grey[700]),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.w400,
+                            color: Colors.grey[700],
+                          ),
                         ),
                         TextSpan(
                           text: _pharmacyName,
-                          style: TextStyle(fontSize: 28, fontWeight: FontWeight.bold, color: AppColors.darkGrey),
+                          style: TextStyle(
+                            fontSize: 28,
+                            fontWeight: FontWeight.bold,
+                            color: AppColors.darkGrey,
+                          ),
                         ),
                       ],
                     ),
@@ -181,10 +198,12 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             _buildHeaderIconButton(
               Icons.person_outline_rounded,
               AppColors.primaryColor,
-                  () {
+              () {
                 Navigator.push(
                   context,
-                  MaterialPageRoute(builder: (context) => const PharmacyProfileScreen()),
+                  MaterialPageRoute(
+                    builder: (context) => const PharmacyProfileScreen(),
+                  ),
                 );
               },
             ),
@@ -194,7 +213,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
     );
   }
 
-  Widget _buildHeaderIconButton(IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildHeaderIconButton(
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Container(
       width: 48,
       height: 48,
@@ -219,7 +242,11 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             color: AppColors.red.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(Icons.location_on_rounded, color: AppColors.red, size: 16),
+          child: Icon(
+            Icons.location_on_rounded,
+            color: AppColors.red,
+            size: 16,
+          ),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -228,12 +255,20 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             children: [
               Text(
                 'Current Location',
-                style: TextStyle(fontSize: 11, color: Colors.grey[600], fontWeight: FontWeight.w500),
+                style: TextStyle(
+                  fontSize: 11,
+                  color: Colors.grey[600],
+                  fontWeight: FontWeight.w500,
+                ),
               ),
               const SizedBox(height: 1),
               Text(
                 _currentLocation,
-                style: TextStyle(fontSize: 14, color: AppColors.darkGrey, fontWeight: FontWeight.w600),
+                style: TextStyle(
+                  fontSize: 14,
+                  color: AppColors.darkGrey,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ],
           ),
@@ -243,12 +278,12 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
   }
 
   Widget _buildOrderBlocks(
-      int pendingCount,
-      int completedCount,
-      int pickedUpCount,
-      int canceledCount,
-      Map<String, List<DocumentSnapshot>> orders,
-      ) {
+    int pendingCount,
+    int completedCount,
+    int pickedUpCount,
+    int canceledCount,
+    Map<String, List<DocumentSnapshot>> orders,
+  ) {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 24),
       child: GridView.count(
@@ -258,32 +293,58 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
         shrinkWrap: true,
         physics: const NeverScrollableScrollPhysics(),
         children: [
-          _buildOrderBlock(context, 'Pending Orders', pendingCount, AppColors.orange, Icons.access_time_filled, orders['pending']!),
-          _buildOrderBlock(context, 'Completed Orders', completedCount, AppColors.green, Icons.check_circle, orders['completed']!),
-          _buildOrderBlock(context, 'Picked Up Orders', pickedUpCount, AppColors.primaryColor, Icons.shopping_bag, orders['picked_up']!),
-          _buildOrderBlock(context, 'Canceled Orders', canceledCount, AppColors.red, Icons.cancel, orders['canceled']!),
+          _buildOrderBlock(
+            context,
+            'Pending Orders',
+            pendingCount,
+            AppColors.orange,
+            Icons.access_time_filled,
+            orders['pending']!,
+          ),
+          _buildOrderBlock(
+            context,
+            'Completed Orders',
+            completedCount,
+            AppColors.green,
+            Icons.check_circle,
+            orders['completed']!,
+          ),
+          _buildOrderBlock(
+            context,
+            'Picked Up Orders',
+            pickedUpCount,
+            AppColors.primaryColor,
+            Icons.shopping_bag,
+            orders['picked_up']!,
+          ),
+          _buildOrderBlock(
+            context,
+            'Canceled Orders',
+            canceledCount,
+            AppColors.red,
+            Icons.cancel,
+            orders['canceled']!,
+          ),
         ],
       ),
     );
   }
 
   Widget _buildOrderBlock(
-      BuildContext context,
-      String title,
-      int count,
-      Color color,
-      IconData icon,
-      List<DocumentSnapshot> orders,
-      ) {
+    BuildContext context,
+    String title,
+    int count,
+    Color color,
+    IconData icon,
+    List<DocumentSnapshot> orders,
+  ) {
     return GestureDetector(
       onTap: () {
         Navigator.push(
           context,
           MaterialPageRoute(
-            builder: (context) => PharmacyOrdersListScreen(
-              title: title,
-              orders: orders,
-            ),
+            builder: (context) =>
+                PharmacyOrdersListScreen(title: title, orders: orders),
           ),
         );
       },
@@ -321,10 +382,7 @@ class _PharmacyHomeScreenState extends State<PharmacyHomeScreen> {
             const SizedBox(height: 6),
             Text(
               '$count orders',
-              style: TextStyle(
-                fontSize: 12,
-                color: Colors.grey[600],
-              ),
+              style: TextStyle(fontSize: 12, color: Colors.grey[600]),
             ),
           ],
         ),

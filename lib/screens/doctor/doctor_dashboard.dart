@@ -41,7 +41,9 @@ class _DoctorDashboardState extends State<DoctorDashboard>
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color lightBlue = const Color(0xFFE3F2FD);
   final Color darkBlue = const Color(0xFF1976D2);
-  final Color backgroundColor = const Color(0xFFE1E6ED); // Off-white light bluish
+  final Color backgroundColor = const Color(
+    0xFFE1E6ED,
+  ); // Off-white light bluish
   final Color redColor = const Color(0xFFE57373);
 
   @override
@@ -93,9 +95,10 @@ class _DoctorDashboardState extends State<DoctorDashboard>
       duration: const Duration(milliseconds: 1000),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
-      CurvedAnimation(parent: _fadeController, curve: Curves.easeOut),
-    );
+    _fadeAnimation = Tween<double>(
+      begin: 0.0,
+      end: 1.0,
+    ).animate(CurvedAnimation(parent: _fadeController, curve: Curves.easeOut));
 
     _slideController = AnimationController(
       duration: const Duration(milliseconds: 800),
@@ -125,7 +128,8 @@ class _DoctorDashboardState extends State<DoctorDashboard>
             _doctorName = nameParts.first;
             _profileImageUrl = profileUrl ?? '';
             _doctorDetails['name'] = data['name'] ?? 'Dr. Alex Chen';
-            _doctorDetails['specialty'] = data['specialty'] ?? 'General Physician';
+            _doctorDetails['specialty'] =
+                data['specialty'] ?? 'General Physician';
             _doctorDetails['address'] = data['clinicAddress'] ?? 'N/A';
           });
         }
@@ -239,7 +243,7 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                 _buildHeaderIconButton(
                   Icons.person_outline_rounded,
                   primaryBlue,
-                      () {
+                  () {
                     if (_currentDoctorId != null) {
                       Navigator.push(
                         context,
@@ -259,7 +263,11 @@ class _DoctorDashboardState extends State<DoctorDashboard>
     );
   }
 
-  Widget _buildHeaderIconButton(IconData icon, Color color, VoidCallback onTap) {
+  Widget _buildHeaderIconButton(
+    IconData icon,
+    Color color,
+    VoidCallback onTap,
+  ) {
     return Container(
       width: 48,
       height: 48,
@@ -284,11 +292,7 @@ class _DoctorDashboardState extends State<DoctorDashboard>
             color: redColor.withOpacity(0.1),
             borderRadius: BorderRadius.circular(10),
           ),
-          child: Icon(
-            Icons.location_on_rounded,
-            color: redColor,
-            size: 16,
-          ),
+          child: Icon(Icons.location_on_rounded, color: redColor, size: 16),
         ),
         const SizedBox(width: 8),
         Expanded(
@@ -382,9 +386,9 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                       ],
                     ),
                     child: const Icon(
-                        Icons.calendar_today_rounded,
-                        color: Colors.white,
-                        size: 30
+                      Icons.calendar_today_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -447,7 +451,8 @@ class _DoctorDashboardState extends State<DoctorDashboard>
             Navigator.push(
               context,
               MaterialPageRoute(
-                builder: (context) => AppointmentsScreen(doctorId: _currentDoctorId!),
+                builder: (context) =>
+                    AppointmentsScreen(doctorId: _currentDoctorId!),
               ),
             );
           },
@@ -483,9 +488,9 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                       ],
                     ),
                     child: const Icon(
-                        Icons.queue_rounded,
-                        color: Colors.white,
-                        size: 30
+                      Icons.queue_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
                   ),
                   const SizedBox(width: 20),
@@ -544,9 +549,7 @@ class _DoctorDashboardState extends State<DoctorDashboard>
           onTap: () {
             Navigator.push(
               context,
-              MaterialPageRoute(
-                builder: (context) => const ChatInboxScreen(),
-              ),
+              MaterialPageRoute(builder: (context) => const ChatInboxScreen()),
             );
           },
           borderRadius: BorderRadius.circular(20),
@@ -581,9 +584,9 @@ class _DoctorDashboardState extends State<DoctorDashboard>
                       ],
                     ),
                     child: const Icon(
-                        Icons.chat_bubble_outline_rounded,
-                        color: Colors.white,
-                        size: 30
+                      Icons.chat_bubble_outline_rounded,
+                      color: Colors.white,
+                      size: 30,
                     ),
                   ),
                   const SizedBox(width: 20),

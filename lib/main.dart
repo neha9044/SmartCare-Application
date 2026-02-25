@@ -11,10 +11,11 @@ import 'package:smartcare_app/screens/patient/patient_dashboard.dart';
 import 'package:smartcare_app/screens/doctor/doctor_dashboard.dart';
 import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart';
 import 'package:smartcare_app/screens/pharmacy/pharmacy_dashboard.dart'; // Add this import
+import 'firebase_options.dart';
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
-  await Firebase.initializeApp();
+  await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
   runApp(const SmartCareApp());
 }
 
@@ -59,7 +60,8 @@ class SmartCareApp extends StatelessWidget {
         '/login': (context) => LoginScreen(),
         '/patient-dashboard': (context) => const PatientDashboard(),
         '/doctor-dashboard': (context) => const DoctorDashboard(),
-        '/pharmacy-dashboard': (context) => const PharmacyDashboard(), // FIX: Change this line
+        '/pharmacy-dashboard': (context) =>
+            const PharmacyDashboard(), // FIX: Change this line
       },
     );
   }
@@ -84,7 +86,10 @@ class AuthWrapper extends StatelessWidget {
         if (user != null) {
           // Check if the user is a Doctor
           return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('doctors').doc(user.uid).snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('doctors')
+                .doc(user.uid)
+                .snapshots(),
             builder: (context, doctorSnapshot) {
               if (doctorSnapshot.connectionState == ConnectionState.waiting) {
                 return SplashScreen();
@@ -98,13 +103,19 @@ class AuthWrapper extends StatelessWidget {
 
               // If not a doctor, check if they are a Patient
               return StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance.collection('patients').doc(user.uid).snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('patients')
+                    .doc(user.uid)
+                    .snapshots(),
                 builder: (context, patientSnapshot) {
-                  if (patientSnapshot.connectionState == ConnectionState.waiting) {
+                  if (patientSnapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return SplashScreen();
                   }
                   if (patientSnapshot.hasError) {
-                    return const Center(child: Text('Error fetching patient data.'));
+                    return const Center(
+                      child: Text('Error fetching patient data.'),
+                    );
                   }
                   if (patientSnapshot.hasData && patientSnapshot.data!.exists) {
                     return const PatientDashboard();
@@ -112,15 +123,22 @@ class AuthWrapper extends StatelessWidget {
 
                   // If not a patient, check if they are a Pharmacy
                   return StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('pharmacies').doc(user.uid).snapshots(),
+                    stream: FirebaseFirestore.instance
+                        .collection('pharmacies')
+                        .doc(user.uid)
+                        .snapshots(),
                     builder: (context, pharmacySnapshot) {
-                      if (pharmacySnapshot.connectionState == ConnectionState.waiting) {
+                      if (pharmacySnapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return SplashScreen();
                       }
                       if (pharmacySnapshot.hasError) {
-                        return const Center(child: Text('Error fetching pharmacy data.'));
+                        return const Center(
+                          child: Text('Error fetching pharmacy data.'),
+                        );
                       }
-                      if (pharmacySnapshot.hasData && pharmacySnapshot.data!.exists) {
+                      if (pharmacySnapshot.hasData &&
+                          pharmacySnapshot.data!.exists) {
                         return const PharmacyDashboard(); // FIX: Change this line
                       }
 
