@@ -12,6 +12,8 @@ class _SplashScreenState extends State<SplashScreen>
   late Animation<double> _fadeAnimation;
   late Animation<double> _scaleAnimation;
 
+  late Timer _timer;
+
   @override
   void initState() {
     super.initState();
@@ -19,7 +21,7 @@ class _SplashScreenState extends State<SplashScreen>
       duration: Duration(seconds: 5),
       vsync: this,
     );
-    _fadeAnimation = Tween<double>(begin: 0.0, end: 5.0).animate(
+    _fadeAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(parent: _animationController, curve: Curves.easeIn),
     );
     _scaleAnimation = Tween<double>(begin: 0.8, end: 1.0).animate(
@@ -28,7 +30,8 @@ class _SplashScreenState extends State<SplashScreen>
 
     _animationController.forward();
 
-    Timer(Duration(seconds: 3), () {
+    _timer = Timer(Duration(seconds: 3), () {
+      if (!mounted) return;
       Navigator.pushReplacementNamed(context, '/login');
     });
   }
@@ -36,6 +39,7 @@ class _SplashScreenState extends State<SplashScreen>
   @override
   void dispose() {
     _animationController.dispose();
+    if (_timer.isActive) _timer.cancel();
     super.dispose();
   }
 

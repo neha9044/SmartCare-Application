@@ -114,11 +114,12 @@ User message: "$userText"
 
       final response = await _model.generateContent([Content.text(prompt)]);
       final reply = response.text ?? 'No response generated.';
+      if (!mounted) return;
       _addMessage(reply, isUser: false);
     } catch (e) {
-      _addMessage('Error: $e', isUser: false);
+      if (mounted) _addMessage('Error: $e', isUser: false);
     } finally {
-      setState(() => _isLoading = false);
+      if (mounted) setState(() => _isLoading = false);
     }
   }
 
@@ -346,6 +347,7 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
       if (response.statusCode == 200) {
         final data = jsonDecode(response.body);
         final replyText = data['reply']?.toString() ?? 'No response';
+        if (!mounted) return;
         setState(() {
           _currentInputType = data['type'] ?? 'text_input';
           _currentOptions = (data['options'] as List?)?.cast<String>() ?? [];
@@ -357,12 +359,16 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
         setState(() => _currentInputType = 'final_advice');
       }
     } catch (e) {
-      _addMessage('Error: Could not connect to the server.', false);
-      _addMessage('Ensure your Flutter device and PC are on the same Wi-Fi.', false);
-      setState(() => _currentInputType = 'final_advice');
+      if (mounted) {
+        _addMessage('Error: Could not connect to the server.', false);
+        _addMessage('Ensure your Flutter device and PC are on the same Wi-Fi.', false);
+        setState(() => _currentInputType = 'final_advice');
+      }
     } finally {
-      setState(() => _isLoading = false);
-      _scrollToBottom();
+      if (mounted) {
+        setState(() => _isLoading = false);
+        _scrollToBottom();
+      }
     }
   }
 
