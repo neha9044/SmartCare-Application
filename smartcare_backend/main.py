@@ -138,6 +138,418 @@ def extract_text(file_path):
 
 
 
+# OCR FOR IMAGE-BASED TEXT EXTRACTION
+
+# Initialize EasyOCR reader (lazy loading)
+ocr_reader = None
+
+def get_ocr_reader():
+    """
+    Get or initialize EasyOCR reader.
+    Lazy loading to avoid startup delays.
+    """
+    global ocr_reader
+    if ocr_reader is None:
+        try:
+            import easyocr
+            print("🔄 Initializing EasyOCR (first time only)...")
+            # Use English only for better accuracy on medical reports
+            ocr_reader = easyocr.Reader(['en'], gpu=False)
+            print("✓ EasyOCR initialized successfully")
+        except ImportError:
+            raise Exception("EasyOCR not installed. Install with: pip install easyocr")
+        except Exception as e:
+            raise Exception(f"Failed to initialize OCR: {str(e)}")
+    return ocr_reader
+
+
+def extract_text_from_image(image_path):
+    """
+    Extract text from image using OCR.
+    
+    Supports: JPG, JPEG, PNG, BMP, TIFF
+    
+    Args:
+        image_path: Path to image file
+        
+    Returns:
+        Extracted text as string
+    """
+    try:
+        from PIL import Image
+        import cv2
+        import numpy as np
+        
+        print(f"📷 Processing image: {image_path}")
+        
+        # Load image
+        image = cv2.imread(image_path)
+        if image is None:
+            raise Exception(f"Failed to load image: {image_path}")
+        
+        # Preprocess image for better OCR
+        # Upscale image for better OCR accuracy
+        height, width = image.shape[:2]
+        scale_factor = 2.0
+        image = cv2.resize(image, (int(width * scale_factor), int(height * scale_factor)), 
+                          interpolation=cv2.INTER_CUBIC)
+        
+        # Convert to grayscale
+        gray = cv2.cvtColor(image, cv2.COLOR_BGR2GRAY)
+        
+        # Denoise the image
+        gray = cv2.fastNlMeansDenoising(gray, h=30)
+        
+        # Apply adaptive thresholding for better text recognition
+        # This works better than global thresholding for varying lighting
+        gray = cv2.adaptiveThreshold(gray, 255, cv2.ADAPTIVE_THRESH_GAUSSIAN_C, 
+                                     cv2.THRESH_BINARY, 11, 2)
+        
+        # Dilate slightly to connect broken characters
+        kernel = np.ones((1, 1), np.uint8)
+        gray = cv2.dilate(gray, kernel, iterations=1)
+        
+        # Save preprocessed image temporarily
+        temp_path = image_path.replace('.', '_processed.')
+        cv2.imwrite(temp_path, gray)
+        
+        print(f"   ✓ Image preprocessed (upscaled {scale_factor}x, denoised, enhanced)")
+        
+        # Use OCR to extract text with optimized parameters
+        reader = get_ocr_reader()
+        result = reader.readtext(
+            temp_path, 
+            detail=0,  # Returns only text, no coordinates
+            paragraph=False,  # Extract line by line
+            text_threshold=0.7,  # Confidence threshold (default: 0.7)
+            low_text=0.4  # Filter out weak text
+        )
+        
+        # Clean up temp file
+        if os.path.exists(temp_path):
+            os.remove(temp_path)
+        
+        # Combine all text lines with proper spacing
+        text = " ".join(result)  # Use space instead of newline for better flow
+        
+        # Clean up common OCR errors
+        text = cleanup_ocr_text(text)
+        
+        print(f"   ✓ OCR completed: {len(text)} characters extracted")
+        print(f"   ✓ Found {len(result)} text blocks")
+        print(f"   ✓ Text cleaned for common OCR errors")
+        
+        return text.strip()
+        
+    except ImportError as e:
+        raise Exception(f"Missing required library: {str(e)}. Install with: pip install easyocr opencv-python Pillow")
+    except Exception as e:
+        print(f"❌ OCR Error: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise Exception(f"OCR processing failed: {str(e)}")
+
+
+def extract_text_with_ocr_fallback(file_path):
+    """
+    Enhanced PDF text extraction with OCR fallback.
+    
+    First tries normal PDF text extraction.
+    If that fails or returns minimal text, uses OCR on PDF pages.
+    
+    Args:
+        file_path: Path to PDF file
+        
+    Returns:
+        Extracted text as string
+    """
+    try:
+        # Try normal text extraction first
+        text = extract_text(file_path)
+        
+        # If we got good text, return it
+        if text and len(text.strip()) > 100:
+            return text
+        
+        print("⚠️ Normal extraction returned minimal text, trying OCR...")
+        
+        # Convert PDF pages to images and use OCR
+        from pdf2image import convert_from_path
+        
+        print("🔄 Converting PDF to images...")
+        images = convert_from_path(file_path, dpi=300)  # High DPI for better OCR
+        print(f"   ✓ Converted to {len(images)} images")
+        
+        ocr_text = ""
+        for i, image in enumerate(images):
+            # Save image temporarily
+            temp_image_path = f"temp_page_{i+1}.png"
+            image.save(temp_image_path, 'PNG')
+            
+            print(f"   Processing page {i+1}/{len(images)} with OCR...")
+            page_text = extract_text_from_image(temp_image_path)
+            ocr_text += page_text + "\n\n"
+            
+            # Clean up temp image
+            if os.path.exists(temp_image_path):
+                os.remove(temp_image_path)
+        
+        print(f"✓ OCR completed: {len(ocr_text)} characters extracted from PDF")
+        return ocr_text.strip()
+        
+    except ImportError:
+        raise Exception("pdf2image not installed. Install with: pip install pdf2image")
+    except Exception as e:
+        print(f"❌ Error in OCR fallback: {str(e)}")
+        raise Exception(f"Failed to extract text even with OCR: {str(e)}")
+
+
+def cleanup_ocr_text(text):
+    """
+    Clean up common OCR errors in extracted text.
+    
+    Common OCR mistakes:
+    - O (letter O) vs 0 (zero)
+    - l (lowercase L) vs 1 (one) vs I (uppercase i)
+    - S vs 5
+    - B vs 8
+    - Spaces in numbers
+    
+    Args:
+        text: Raw OCR extracted text
+        
+    Returns:
+        Cleaned text with common errors fixed
+    """
+    import re
+    
+    # Fix common number recognition errors in medical values
+    # Fix "O" to "0" when surrounded by digits or decimal points
+    text = re.sub(r'(\d+)[Oo](\d+)', r'\g<1>0\g<2>', text)
+    text = re.sub(r'(\d+\.)[ ]?[Oo]([\d ])', r'\g<1>0\g<2>', text)
+    
+    # Fix lowercase "l" to "1" when in numeric context
+    text = re.sub(r'(\d+)[lI](\d+)', r'\g<1>1\g<2>', text)
+    
+    # Fix "S" to "5" in numeric context
+    text = re.sub(r'(\d+)[Ss](\d+)', r'\g<1>5\g<2>', text)
+    
+    # Remove extra spaces within numbers
+    text = re.sub(r'(\d+)\s+(\d+)', r'\g<1>\g<2>', text)
+    
+    # Fix common medical term typos
+    replacements = {
+        'Hcmoglobin': 'Hemoglobin',
+        'Haemoglobin': 'Hemoglobin',
+        'Hgb': 'Hemoglobin',
+        'GIucose': 'Glucose',
+        'Giucose': 'Glucose',
+        'PIatelets': 'Platelets',
+        'Piatelet': 'Platelet',
+        'mgldl': 'mg/dl',
+        'mg ldl': 'mg/dl',
+        'mgldi': 'mg/dl',
+        'mgld': 'mg/dl',
+        'mg/d': 'mg/dl',
+        'mmolll': 'mmol/l',
+        'mmol ll': 'mmol/l',
+        'mmol/': 'mmol/l',
+    }
+    
+    for wrong, correct in replacements.items():
+        text = re.sub(wrong, correct, text, flags=re.IGNORECASE)
+    
+    return text
+
+
+def structure_summary(text, report_type="Unknown"):
+    """
+    Create an intelligent structured summary that adapts to different report types.
+    
+    Args:
+        text: Raw OCR text from medical report
+        report_type: Type of report (Lab Report, Radiology Report, Discharge Summary)
+    
+    Returns:
+        Structured markdown-style summary with universal fields + type-specific sections
+    """
+    if not text or len(text.strip()) < 20:
+        return text
+    
+    structured = []
+    
+    # ========== UNIVERSAL FIELDS (present in most reports) ==========
+    
+    # Extract patient information
+    patient_patterns = [
+        r'Patient[:\s]*Name[:\s]*([^\n\r]+)',
+        r'Patient[:\s]+([^\n\r]+)',
+        r'Name[:\s]*:?\s*([A-Z][a-z]+\s+[A-Z][a-z]+)',
+    ]
+    for pattern in patient_patterns:
+        patient_match = re.search(pattern, text, re.IGNORECASE)
+        if patient_match:
+            patient_name = patient_match.group(1).strip()
+            # Filter out common non-name text
+            if len(patient_name) > 3 and not re.search(r'\d{4}', patient_name):
+                structured.append(f"📋 PATIENT: {patient_name}")
+                break
+    
+    # Extract date
+    date_patterns = [
+        r'Date[:\s]*:?\s*(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+        r'Date[:\s]*:?\s*([A-Za-z]+\s+\d{1,2},?\s+\d{4})',
+        r'(?:on|dated)[:\s]+(\d{1,2}[/-]\d{1,2}[/-]\d{2,4})',
+    ]
+    for pattern in date_patterns:
+        date_match = re.search(pattern, text, re.IGNORECASE)
+        if date_match:
+            structured.append(f"📅 DATE: {date_match.group(1).strip()}")
+            break
+    
+    if structured:
+        structured.append("")  # Add spacing
+    
+    # ========== TYPE-SPECIFIC FORMATTING ==========
+    
+    if report_type == "Lab Report":
+        # For lab reports: extract test values
+        lab_values_section = []
+        
+        # Find all NUMBER: VALUE patterns (common in lab reports)
+        lab_values = re.findall(
+            r'([A-Za-z\s]+)[:\s-]+(\d+\.?\d*)\s*([a-zA-Z/μ]+)',
+            text
+        )
+        
+        if lab_values:
+            for test_name, value, unit in lab_values[:8]:  # Show up to 8 values
+                clean_name = test_name.strip()
+                if len(clean_name) > 2 and len(clean_name) < 40:
+                    lab_values_section.append(f"  • {clean_name}: {value} {unit}")
+        
+        # If no structured values found, show key lines with numbers
+        if not lab_values:
+            lines_with_numbers = [
+                line.strip() for line in text.split('\n')
+                if re.search(r'\d+\.?\d*', line) and len(line.strip()) > 10
+            ]
+            for line in lines_with_numbers[:5]:
+                lab_values_section.append(f"  • {line}")
+        
+        # Only add the header if we found content
+        if lab_values_section:
+            structured.append("🔬 LAB VALUES:")
+            structured.extend(lab_values_section)
+    
+    elif report_type == "Radiology Report":
+        # For radiology: extract imaging technique and findings
+        technique_match = re.search(
+            r'(CT|MRI|X-Ray|Ultrasound|Mammography)[:\s]+([^\n\r]+)',
+            text, re.IGNORECASE
+        )
+        if technique_match:
+            structured.append(f"🏥 IMAGING: {technique_match.group(0).strip()}\n")
+        
+        # Extract findings
+        findings_patterns = [
+            r'Findings[:\s]*:?\s*([^\n\r]+(?:\n[^\n\r]+){0,3})',
+            r'Impression[:\s]*:?\s*([^\n\r]+(?:\n[^\n\r]+){0,2})',
+            r'Interpretation[:\s]*:?\s*([^\n\r]+)',
+        ]
+        for pattern in findings_patterns:
+            findings_match = re.search(pattern, text, re.IGNORECASE)
+            if findings_match:
+                findings_text = findings_match.group(1).strip()
+                # Split into sentences
+                sentences = re.split(r'[.!]\s+', findings_text)
+                findings_list = [s.strip() for s in sentences[:3] if s.strip()]
+                
+                # Only add header if we have findings
+                if findings_list:
+                    structured.append(f"🔍 FINDINGS:")
+                    for sentence in findings_list:
+                        structured.append(f"  • {sentence}")
+                break
+    
+    elif report_type == "Discharge Summary":
+        # For discharge summaries: diagnosis, treatment, medications, follow-up
+        diagnosis_patterns = [
+            r'Diagnosis[:\s]*:?\s*([^\n\r]+)',
+            r'Diagnosed[:\s]+with[:\s]+([^\n\r]+)',
+            r'Admitted[:\s]+(?:with|for)[:\s]+([^\n\r]+)',
+        ]
+        for pattern in diagnosis_patterns:
+            diag_match = re.search(pattern, text, re.IGNORECASE)
+            if diag_match:
+                structured.append(f"🏥 DIAGNOSIS: {diag_match.group(1).strip()}\n")
+                break
+        
+        # Extract treatment/medications
+        treatment_patterns = [
+            r'Treatment[:\s]*:?\s*([^\n\r]+)',
+            r'Medications?[:\s]*:?\s*([^\n\r]+)',
+            r'Prescribed[:\s]*:?\s*([^\n\r]+)',
+        ]
+        for pattern in treatment_patterns:
+            treatment_match = re.search(pattern, text, re.IGNORECASE)
+            if treatment_match:
+                structured.append(f"💊 TREATMENT: {treatment_match.group(1).strip()}\n")
+                break
+        
+        # Extract follow-up
+        followup_patterns = [
+            r'Follow-?up[:\s]*:?\s*([^\n\r]+)',
+            r'Discharge[:\s]+(?:Advice|Instructions)[:\s]*:?\s*([^\n\r]+)',
+        ]
+        for pattern in followup_patterns:
+            followup_match = re.search(pattern, text, re.IGNORECASE)
+            if followup_match:
+                structured.append(f"📝 FOLLOW-UP: {followup_match.group(1).strip()}")
+                break
+    
+    # ========== AI-GENERATED KEY POINTS (fallback for any missing info) ==========
+    
+    # If we didn't extract much structured data, add AI summary
+    if len(structured) < 5:
+        structured.append("\n📌 KEY POINTS:")
+        try:
+            # Use TextRank to extract 3-4 most important sentences
+            parser = PlaintextParser.from_string(text, Tokenizer("english"))
+            summarizer = TextRankSummarizer()
+            summary_sentences = summarizer(parser.document, 4)
+            
+            for sentence in summary_sentences:
+                sentence_text = str(sentence).strip()
+                if len(sentence_text) > 15:  # Skip very short sentences
+                    structured.append(f"  • {sentence_text}")
+        except:
+            # If summarization fails, show first few lines
+            lines = [line.strip() for line in text.split('\n') if len(line.strip()) > 20]
+            for line in lines[:4]:
+                structured.append(f"  • {line}")
+    
+    # ========== DOCTOR/PHYSICIAN INFO ==========
+    
+    doctor_patterns = [
+        r'([A-Z][a-z]+\s+[A-Z][a-z]+,?\s+M\.?D\.?)',
+        r'Dr\.?\s+([A-Z][a-z]+(?:\s+[A-Z][a-z]+)+)',
+        r'Physician[:\s]*:?\s*([^\n\r]+)',
+    ]
+    for pattern in doctor_patterns:
+        doctor_match = re.search(pattern, text)
+        if doctor_match:
+            structured.append(f"\n👨‍⚕️ PHYSICIAN: {doctor_match.group(1).strip()}")
+            break
+    
+    # Return structured summary or fallback to raw text
+    if len(structured) > 2:
+        return '\n'.join(structured)
+    else:
+        # Complete fallback: just show cleaned text
+        return text[:600].strip()
+
+
 # ABNORMAL DETECTION
 
 def detect_abnormal(text):
@@ -154,9 +566,11 @@ def detect_abnormal(text):
     
     # Hemoglobin Detection (12-17 g/dL)
     hemoglobin_patterns = [
-        r'Hemoglobin[:\s]+(\d+\.?\d*)',
-        r'Hb[:\s]+(\d+\.?\d*)',
-        r'HGB[:\s]+(\d+\.?\d*)'
+        r'Hemoglobin[:\s-]+(\d+\.?\d*)',
+        r'Hb[:\s-]+(\d+\.?\d*)',
+        r'HGB[:\s-]+(\d+\.?\d*)',
+        r'Haemoglobin[:\s-]+(\d+\.?\d*)',
+        r'Hgb[:\s-]+(\d+\.?\d*)'
     ]
     
     for pattern in hemoglobin_patterns:
@@ -171,9 +585,10 @@ def detect_abnormal(text):
     
     # WBC Detection (4-11 × 10^9/L or 4000-11000 cells/μL)
     wbc_patterns = [
-        r'WBC[:\s]+(\d+\.?\d*)',
-        r'White Blood Cell[s]?[:\s]+(\d+\.?\d*)',
-        r'Leukocyte[s]?[:\s]+(\d+\.?\d*)'
+        r'WBC[:\s-]+(\d+\.?\d*)',
+        r'White Blood Cell[s]?[:\s-]+(\d+\.?\d*)',
+        r'Leukocyte[s]?[:\s-]+(\d+\.?\d*)',
+        r'W[\s]?B[\s]?C[:\s-]+(\d+\.?\d*)'
     ]
     
     for pattern in wbc_patterns:
@@ -196,9 +611,10 @@ def detect_abnormal(text):
     
     # Platelets Detection (150-450 × 10^9/L or 150000-450000 per μL)
     platelet_patterns = [
-        r'Platelet[s]?[:\s]+(\d+\.?\d*)',
-        r'PLT[:\s]+(\d+\.?\d*)',
-        r'Thrombocyte[s]?[:\s]+(\d+\.?\d*)'
+        r'Platelet[s]?[:\s-]+(\d+\.?\d*)',
+        r'PLT[:\s-]+(\d+\.?\d*)',
+        r'Thrombocyte[s]?[:\s-]+(\d+\.?\d*)',
+        r'P[\s]?L[\s]?T[:\s-]+(\d+\.?\d*)'
     ]
     
     for pattern in platelet_patterns:
@@ -221,10 +637,12 @@ def detect_abnormal(text):
     
     # Glucose Detection (70-140 mg/dL)
     glucose_patterns = [
-        r'Glucose[:\s]+(\d+\.?\d*)',
-        r'Blood Glucose[:\s]+(\d+\.?\d*)',
-        r'Blood Sugar[:\s]+(\d+\.?\d*)',
-        r'GLU[:\s]+(\d+\.?\d*)'
+        r'Glucose[:\s-]+(\d+\.?\d*)',
+        r'Blood Glucose[:\s-]+(\d+\.?\d*)',
+        r'Blood Sugar[:\s-]+(\d+\.?\d*)',
+        r'GLU[:\s-]+(\d+\.?\d*)',
+        r'GLUCOSE[:\s-]+[\w\s()]*?(\d+\.?\d*)\s*mg',
+        r'Giucose[:\s-]+(\d+\.?\d*)'
     ]
     
     for pattern in glucose_patterns:
@@ -236,6 +654,87 @@ def detect_abnormal(text):
             elif value > 140:
                 abnormal.append(f"High Glucose ({value} mg/dL)")
             break
+    
+    # Creatinine Detection (0.7-1.3 mg/dL)
+    creatinine_patterns = [
+        r'Creatinine[:\s-]+[\w\s()]*?(\d+\.?\d*)',
+        r'CREAT[:\s-]+(\d+\.?\d*)',
+        r'Serum Creatinine[:\s-]+[\w\s()]*?(\d+\.?\d*)',
+        r'CREATNTNE[:\s-]+[\w\s()]*?(\d+\.?\d*)'
+    ]
+    
+    for pattern in creatinine_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                value = float(match.group(1))
+                if value < 0.7:
+                    abnormal.append(f"Low Creatinine ({value} mg/dL)")
+                elif value > 1.3:
+                    abnormal.append(f"High Creatinine ({value} mg/dL)")
+                break
+            except ValueError:
+                continue
+    
+    # BUN Detection (7-20 mg/dL)
+    bun_patterns = [
+        r'BUN[:\s-]+[\w\s()]*?(\d+\.?\d*)',
+        r'Blood Urea Nitrogen[:\s-]+(\d+\.?\d*)',
+        r'Urea[:\s-]+(\d+\.?\d*)'
+    ]
+    
+    for pattern in bun_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                value = float(match.group(1))
+                if value < 7:
+                    abnormal.append(f"Low BUN ({value} mg/dL)")
+                elif value > 20:
+                    abnormal.append(f"High BUN ({value} mg/dL)")
+                break
+            except ValueError:
+                continue
+    
+    # Sodium Detection (135-145 mmol/L)
+    sodium_patterns = [
+        r'Sodium[:\s-]+[\w\s()]*?(\d+\.?\d*)',
+        r'Na[:\s-]+(\d+\.?\d*)',
+        r'SODIUM[:\s-]+[\w\s()]*?(\d+\.?\d*)'
+    ]
+    
+    for pattern in sodium_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                value = float(match.group(1))
+                if value < 135:
+                    abnormal.append(f"Low Sodium ({value} mmol/L)")
+                elif value > 145:
+                    abnormal.append(f"High Sodium ({value} mmol/L)")
+                break
+            except ValueError:
+                continue
+    
+    # Potassium Detection (3.5-5.1 mmol/L)
+    potassium_patterns = [
+        r'Potassium[:\s-]+[\w\s()]*?(\d+\.?\d*)',
+        r'K[:\s-]+(\d+\.?\d*)',
+        r'POTASSIUM[:\s-]+[\w\s()]*?(\d+\.?\d*)'
+    ]
+    
+    for pattern in potassium_patterns:
+        match = re.search(pattern, text, re.IGNORECASE)
+        if match:
+            try:
+                value = float(match.group(1))
+                if value < 3.5:
+                    abnormal.append(f"Low Potassium ({value} mmol/L)")
+                elif value > 5.1:
+                    abnormal.append(f"High Potassium ({value} mmol/L)")
+                break
+            except ValueError:
+                continue
     
     return abnormal
 
@@ -606,11 +1105,12 @@ async def upload(file: UploadFile, user_id: str = "anonymous"):
 
         # Extract and analyze
         try:
-            text = extract_text(path)
+            # Use OCR fallback for image-based PDFs
+            text = extract_text_with_ocr_fallback(path)
         except Exception as e:
             raise HTTPException(
                 status_code=400, 
-                detail=f"Unable to extract text from PDF. The PDF might be image-based (scanned) or corrupted. Error: {str(e)}"
+                detail=f"Unable to extract text from PDF: {str(e)}"
             )
         
         if not text or len(text.strip()) < 20:
@@ -627,8 +1127,8 @@ async def upload(file: UploadFile, user_id: str = "anonymous"):
         abnormal = detect_abnormal(text)
         print(f"✓ Abnormal values found: {len(abnormal)}")
         
-        summary = summarize(text)
-        print(f"✓ Summary generated")
+        summary = structure_summary(text, report_type)
+        print(f"✓ Structured summary generated")
         
         severity = classify_severity(abnormal)
         print(f"✓ Severity classified: {severity}")
@@ -690,6 +1190,158 @@ async def upload(file: UploadFile, user_id: str = "anonymous"):
             except:
                 pass
         print(f"❌ Upload failed: {str(e)}")
+        import traceback
+        traceback.print_exc()
+        raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")
+
+
+@app.post("/upload-image")
+async def upload_image(file: UploadFile, user_id: str = "anonymous"):
+    """
+    Upload and analyze medical report IMAGE (JPG, PNG, etc.) using OCR.
+    
+    Args:
+        file: Image file upload (JPG, PNG, BMP, TIFF)
+        user_id: User identifier (optional, default: "anonymous")
+    
+    Returns:
+        {
+            "report_type": "Lab Report",
+            "summary": "...",
+            "abnormal": ["Low Hemoglobin"],
+            "severity": "Mild",
+            "timestamp": "2026-02-24T10:30:00",
+            "document_id": "firebase_doc_id" (if Firebase enabled)
+        }
+    """
+    path = None
+    try:
+        # Validate file type
+        allowed_extensions = ['.jpg', '.jpeg', '.png', '.bmp', '.tiff', '.tif']
+        file_ext = os.path.splitext(file.filename)[1].lower()
+        
+        if file_ext not in allowed_extensions:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"Invalid file type. Supported: {', '.join(allowed_extensions)}"
+            )
+        
+        print(f"\n{'='*60}")
+        print(f"📥 New IMAGE upload request:")
+        print(f"   File: {file.filename}")
+        print(f"   User: {user_id}")
+        print(f"   Content-Type: {file.content_type}")
+        
+        # Save uploaded file with unique name
+        import uuid
+        unique_filename = f"{uuid.uuid4()}_{file.filename}"
+        path = os.path.join("uploads", unique_filename)
+        
+        # Create uploads directory if it doesn't exist
+        os.makedirs("uploads", exist_ok=True)
+        
+        # Save file
+        with open(path, "wb") as buffer:
+            content = await file.read()
+            buffer.write(content)
+        
+        file_size = os.path.getsize(path)
+        print(f"   ✓ File saved: {file_size} bytes")
+        
+        if file_size < 100:
+            raise HTTPException(status_code=400, detail="File is too small to be a valid image")
+
+        # Extract text using OCR
+        try:
+            text = extract_text_from_image(path)
+        except Exception as e:
+            raise HTTPException(
+                status_code=400, 
+                detail=f"OCR failed: {str(e)}"
+            )
+        
+        if not text or len(text.strip()) < 20:
+            raise HTTPException(
+                status_code=400, 
+                detail="Unable to extract sufficient text from image. Please ensure the image is clear and contains readable text."
+            )
+        
+        print(f"✓ Text extracted successfully: {len(text)} characters")
+        
+        # Analyze the extracted text
+        report_type = detect_report_type(text)
+        print(f"✓ Report type detected: {report_type}")
+        
+        abnormal = detect_abnormal(text)
+        print(f"✓ Abnormal values found: {len(abnormal)}")
+        
+        summary = structure_summary(text, report_type)
+        print(f"✓ Structured summary generated")
+        
+        severity = classify_severity(abnormal)
+        print(f"✓ Severity classified: {severity}")
+        
+        timestamp = datetime.now().isoformat()
+
+        # Prepare response
+        response = {
+            "report_type": report_type,
+            "summary": summary,
+            "abnormal": abnormal,
+            "severity": severity,
+            "timestamp": timestamp
+        }
+
+        # Store in Firebase
+        if db:
+            firebase_data = {
+                "user_id": user_id,
+                "report_type": report_type,
+                "summary": summary,
+                "abnormal": abnormal,
+                "severity": severity,
+                "timestamp": timestamp,
+                "filename": file.filename,
+                "file_type": "image",
+                "extraction_method": "OCR"
+            }
+            
+            try:
+                doc_ref = db.collection("medical_reports").add(firebase_data)
+                document_id = doc_ref[1].id
+                response["document_id"] = document_id
+                print(f"✓ Stored in Firebase: {document_id}")
+            except Exception as e:
+                print(f"⚠️ Firebase storage failed: {e}")
+
+        # Clean up uploaded file
+        try:
+            os.remove(path)
+            print(f"✓ Cleaned up temporary file")
+        except:
+            pass
+
+        print(f"✓ Processing completed successfully")
+        print(f"{'='*60}\n")
+        
+        return response
+
+    except HTTPException:
+        # Clean up file on error
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except:
+                pass
+        raise
+    except Exception as e:
+        # Clean up file on error
+        if path and os.path.exists(path):
+            try:
+                os.remove(path)
+            except:
+                pass
+        print(f"❌ Image upload failed: {str(e)}")
         import traceback
         traceback.print_exc()
         raise HTTPException(status_code=500, detail=f"Processing error: {str(e)}")

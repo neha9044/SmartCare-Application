@@ -3,6 +3,7 @@ import 'dart:io';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:smartcare_app/services/medical_report_service.dart';
 
@@ -121,6 +122,102 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
     }
   }
 
+  Future<void> _pickAndUploadFromCamera() async {
+    setState(() {
+      _isUploading = true;
+      _analysisResult = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      final response = await MedicalReportService.pickAndUploadFromCamera(
+        user.uid,
+      );
+
+      setState(() {
+        _analysisResult = response;
+      });
+
+      // Reload history to show the new report
+      _loadReportHistory();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✓ Photo analyzed successfully!'),
+            backgroundColor: successGreen,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Camera upload failed: ${e.toString()}'),
+            backgroundColor: errorRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isUploading = false);
+    }
+  }
+
+  Future<void> _pickAndUploadFromGallery() async {
+    setState(() {
+      _isUploading = true;
+      _analysisResult = null;
+    });
+
+    try {
+      final user = FirebaseAuth.instance.currentUser;
+
+      if (user == null) {
+        throw Exception('User not logged in');
+      }
+
+      final response = await MedicalReportService.pickAndUploadFromGallery(
+        user.uid,
+      );
+
+      setState(() {
+        _analysisResult = response;
+      });
+
+      // Reload history to show the new report
+      _loadReportHistory();
+
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: const Text('✓ Image analyzed successfully!'),
+            backgroundColor: successGreen,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text('Gallery upload failed: ${e.toString()}'),
+            backgroundColor: errorRed,
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    } finally {
+      setState(() => _isUploading = false);
+    }
+  }
+
   Color _getSeverityColor(String severity) {
     switch (severity.toLowerCase()) {
       case 'normal':
@@ -201,7 +298,7 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
                       ),
                       const SizedBox(height: 4),
                       const Text(
-                        'Upload your medical report PDF for instant ML-based analysis',
+                        'Upload PDF or capture image for instant analysis',
                         style: TextStyle(fontSize: 13, color: Colors.black87),
                       ),
                     ],
@@ -212,7 +309,18 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
           ),
           const SizedBox(height: 24),
 
-          // Upload Button
+          // Upload Buttons Section
+          const Text(
+            'Choose Upload Method:',
+            style: TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w600,
+              color: Colors.black87,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Upload PDF Button
           ElevatedButton.icon(
             onPressed: _isUploading ? null : _pickAndUploadFile,
             icon: _isUploading
@@ -224,7 +332,7 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
                       valueColor: AlwaysStoppedAnimation<Color>(Colors.white),
                     ),
                   )
-                : const Icon(Icons.upload_file),
+                : const Icon(Icons.picture_as_pdf),
             label: Text(_isUploading ? 'Analyzing...' : 'Upload PDF Report'),
             style: ElevatedButton.styleFrom(
               backgroundColor: primaryBlue,
@@ -234,6 +342,71 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
                 borderRadius: BorderRadius.circular(12),
               ),
               elevation: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Take Photo Button
+          ElevatedButton.icon(
+            onPressed: _isUploading ? null : _pickAndUploadFromCamera,
+            icon: const Icon(Icons.camera_alt),
+            label: const Text('Take Photo of Report'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF4CAF50),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+          ),
+          const SizedBox(height: 12),
+
+          // Choose from Gallery Button
+          ElevatedButton.icon(
+            onPressed: _isUploading ? null : _pickAndUploadFromGallery,
+            icon: const Icon(Icons.photo_library),
+            label: const Text('Choose from Gallery'),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF9C27B0),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 16),
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(12),
+              ),
+              elevation: 2,
+            ),
+          ),
+
+          // OCR Info Note
+          const SizedBox(height: 16),
+          Container(
+            padding: const EdgeInsets.all(12),
+            decoration: BoxDecoration(
+              color: Colors.orange.shade50,
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: Colors.orange.shade200),
+            ),
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Icon(
+                  Icons.info_outline,
+                  color: Colors.orange.shade700,
+                  size: 20,
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Text(
+                    'Image processing extracts text from photos. Processing may take 2-3 minutes for scanned reports. Please be patient.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: Colors.orange.shade900,
+                    ),
+                  ),
+                ),
+              ],
             ),
           ),
           const SizedBox(height: 24),

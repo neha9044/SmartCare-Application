@@ -7,6 +7,12 @@ scikit-learn
 firebase-admin
 python-multipart
 
+# OCR Libraries for Image Text Extraction
+easyocr
+Pillow
+pdf2image
+opencv-python
+
 # Optional for development
 pytest
 httpx
