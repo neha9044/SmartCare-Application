@@ -21,7 +21,7 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
   static const _apiKey =
-      'AIzaSyBS2AvLMUKdNBF0hbUhm7J0mfQM5KWbBK8'; // Replace with your Gemini API key
+      ''; // Replace with your Gemini API key
 
   final List<Map<String, dynamic>> _messages = [];
   final TextEditingController _textController = TextEditingController();
