@@ -21,7 +21,7 @@ class ChatbotScreen extends StatefulWidget {
 
 class _ChatbotScreenState extends State<ChatbotScreen> {
   static const _apiKey =
-      'AIzaSyBaHn01VDcZ2MU2XSKhoH1S5hKi5Yu6DQM'; // Replace with your Gemini API key
+      'AIzaSyBS2AvLMUKdNBF0hbUhm7J0mfQM5KWbBK8'; // Replace with your Gemini API key
 
   final List<Map<String, dynamic>> _messages = [];
   final TextEditingController _textController = TextEditingController();
@@ -63,7 +63,10 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   void initState() {
     super.initState();
     if (_apiKey.isNotEmpty && _apiKey != 'YOUR_GEMINI_API_KEY') {
-      _model = GenerativeModel(model: 'gemini-2.0-flash', apiKey: _apiKey);
+      _model = GenerativeModel(
+        model: 'gemini-flash-lite-latest',
+        apiKey: _apiKey,
+      );
     }
     Future.microtask(() => _addInitialMessage());
   }
@@ -71,7 +74,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
   void _addInitialMessage() {
     _addMessage(
       'Hello 👋 I’m your health assistant. I can share general info and home remedies — '
-          'but not medical diagnoses. Use the button below to start a formal diagnosis check.',
+      'but not medical diagnoses. Use the button below to start a formal diagnosis check.',
       isUser: false,
     );
   }
@@ -83,7 +86,7 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     Future.delayed(
       const Duration(milliseconds: 100),
-          () => _scrollController.animateTo(
+      () => _scrollController.animateTo(
         _scrollController.position.maxScrollExtent + 60,
         duration: const Duration(milliseconds: 300),
         curve: Curves.easeOut,
@@ -105,12 +108,19 @@ class _ChatbotScreenState extends State<ChatbotScreen> {
 
     try {
       final language = _selectedLanguage;
-      final prompt = '''
-$_systemInstruction 
-User prefers replies in "$language" — always write in that language’s native script (not English letters).
-Include natural, cultural, and safe home remedies when appropriate.
-User message: "$userText"
-''';
+      final prompt =
+          """
+You are a friendly healthcare assistant.
+
+Rules:
+1. Reply ONLY in $language language.
+2. Do NOT use any other language.
+3. Give short health advice and safe home remedies.
+4. Never diagnose diseases or prescribe medicine.
+
+User question:
+$userText
+""";
 
       final response = await _model.generateContent([Content.text(prompt)]);
       final reply = response.text ?? 'No response generated.';
@@ -144,10 +154,7 @@ User message: "$userText"
                 ),
               ),
               items: _languages.map((lang) {
-                return DropdownMenuItem(
-                  value: lang,
-                  child: Text(lang),
-                );
+                return DropdownMenuItem(value: lang, child: Text(lang));
               }).toList(),
               onChanged: (value) {
                 setState(() {
@@ -167,12 +174,15 @@ User message: "$userText"
                 final message = _messages[index];
                 final isUser = message['isUser'] as bool;
                 return Align(
-                  alignment:
-                  isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     padding: const EdgeInsets.all(12),
-                    margin:
-                    const EdgeInsets.symmetric(vertical: 4, horizontal: 8),
+                    margin: const EdgeInsets.symmetric(
+                      vertical: 4,
+                      horizontal: 8,
+                    ),
                     decoration: BoxDecoration(
                       color: isUser
                           ? AppColors.primaryColor.withOpacity(0.85)
@@ -211,14 +221,17 @@ User message: "$userText"
                 shape: RoundedRectangleBorder(
                   borderRadius: BorderRadius.circular(12),
                 ),
-                padding:
-                const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 16,
+                  vertical: 12,
+                ),
               ),
               onPressed: () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                      builder: (context) => const DecisionChatbotScreen()),
+                    builder: (context) => const DecisionChatbotScreen(),
+                  ),
                 );
               },
               icon: const Icon(Icons.local_hospital, color: Colors.white),
@@ -258,8 +271,10 @@ User message: "$userText"
                 ),
                 filled: true,
                 fillColor: Colors.grey[100],
-                contentPadding:
-                const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
+                contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
               ),
               onSubmitted: (_) => _sendMessage(),
             ),
@@ -318,7 +333,7 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
     if (_scrollController.hasClients) {
       Future.delayed(
         const Duration(milliseconds: 100),
-            () => _scrollController.animateTo(
+        () => _scrollController.animateTo(
           _scrollController.position.maxScrollExtent + 100,
           duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
@@ -354,14 +369,23 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
         });
         _addMessage(replyText, false);
       } else {
-        _addMessage('Error: Server responded with status ${response.statusCode}', false);
-        _addMessage('Check Flask URL ($flaskUrl) and firewall settings.', false);
+        _addMessage(
+          'Error: Server responded with status ${response.statusCode}',
+          false,
+        );
+        _addMessage(
+          'Check Flask URL ($flaskUrl) and firewall settings.',
+          false,
+        );
         setState(() => _currentInputType = 'final_advice');
       }
     } catch (e) {
       if (mounted) {
         _addMessage('Error: Could not connect to the server.', false);
-        _addMessage('Ensure your Flutter device and PC are on the same Wi-Fi.', false);
+        _addMessage(
+          'Ensure your Flutter device and PC are on the same Wi-Fi.',
+          false,
+        );
         setState(() => _currentInputType = 'final_advice');
       }
     } finally {
@@ -390,13 +414,15 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
                 final msg = _messages[index];
                 final isUser = msg['isUser'] as bool;
                 return Align(
-                  alignment:
-                  isUser ? Alignment.centerRight : Alignment.centerLeft,
+                  alignment: isUser
+                      ? Alignment.centerRight
+                      : Alignment.centerLeft,
                   child: Container(
                     padding: const EdgeInsets.all(12),
                     margin: const EdgeInsets.symmetric(vertical: 6),
                     constraints: BoxConstraints(
-                        maxWidth: MediaQuery.of(context).size.width * 0.8),
+                      maxWidth: MediaQuery.of(context).size.width * 0.8,
+                    ),
                     decoration: BoxDecoration(
                       color: isUser
                           ? AppColors.primaryColor.withOpacity(0.9)
@@ -408,8 +434,9 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
                       style: TextStyle(
                         color: isUser ? Colors.white : Colors.black87,
                         height: 1.4,
-                        fontWeight:
-                        isUser ? FontWeight.w500 : FontWeight.normal,
+                        fontWeight: isUser
+                            ? FontWeight.w500
+                            : FontWeight.normal,
                       ),
                     ),
                   ),
@@ -454,21 +481,21 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
           children: [
             Expanded(
               child: ElevatedButton(
-                style:
-                ElevatedButton.styleFrom(backgroundColor: AppColors.primaryColor),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                ),
                 onPressed: () => _sendMessage('yes', isUser: true),
-                child:
-                const Text('Yes', style: TextStyle(color: Colors.white)),
+                child: const Text('Yes', style: TextStyle(color: Colors.white)),
               ),
             ),
             const SizedBox(width: 8),
             Expanded(
               child: ElevatedButton(
-                style:
-                ElevatedButton.styleFrom(backgroundColor: Colors.grey[400]),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.grey[400],
+                ),
                 onPressed: () => _sendMessage('no', isUser: true),
-                child:
-                const Text('No', style: TextStyle(color: Colors.black)),
+                child: const Text('No', style: TextStyle(color: Colors.black)),
               ),
             ),
           ],
@@ -497,9 +524,12 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
                       ? 'Enter number of days...'
                       : 'Type your symptom...',
                   border: OutlineInputBorder(
-                      borderRadius: BorderRadius.circular(24)),
+                    borderRadius: BorderRadius.circular(24),
+                  ),
                   contentPadding: const EdgeInsets.symmetric(
-                      horizontal: 16, vertical: 8),
+                    horizontal: 16,
+                    vertical: 8,
+                  ),
                 ),
                 onSubmitted: (text) => _sendMessage(text, isUser: true),
               ),
@@ -511,7 +541,7 @@ class _DecisionChatbotScreenState extends State<DecisionChatbotScreen> {
                 icon: const Icon(Icons.send, color: Colors.white),
                 onPressed: () => _sendMessage(_controller.text, isUser: true),
               ),
-            )
+            ),
           ],
         ),
       );
