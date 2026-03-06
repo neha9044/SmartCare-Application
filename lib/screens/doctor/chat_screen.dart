@@ -7,6 +7,9 @@ import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/services/chat_service.dart';
 import 'package:smartcare_app/utils/chat_status.dart';
 import 'package:smartcare_app/screens/doctor/patient_record_screen.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
+import 'package:zego_uikit/zego_uikit.dart';
 
 class DoctorChatScreen extends StatefulWidget {
   final String chatId;
@@ -42,7 +45,9 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
   }
 
   void _listenToChatUpdates() {
-    _chatSubscription = _chatService.getChatStream(widget.chatId).listen((chatSnapshot) {
+    _chatSubscription = _chatService.getChatStream(widget.chatId).listen((
+      chatSnapshot,
+    ) {
       if (chatSnapshot.exists) {
         final status = chatSnapshot.get('status');
         setState(() {
@@ -109,6 +114,24 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
         foregroundColor: Colors.white,
         actions: [
           if (_isChatActive)
+            ZegoSendCallInvitationButton(
+              isVideoCall: false,
+              resourceID: "zego_call",
+              invitees: [
+                ZegoUIKitUser(id: widget.patientId, name: widget.patientName),
+              ],
+            ),
+
+          if (_isChatActive)
+            ZegoSendCallInvitationButton(
+              isVideoCall: true,
+              resourceID: "zego_call",
+              invitees: [
+                ZegoUIKitUser(id: widget.patientId, name: widget.patientName),
+              ],
+            ),
+
+          if (_isChatActive)
             IconButton(
               icon: const Icon(Icons.close),
               onPressed: _closeChat,
@@ -136,7 +159,8 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
                   controller: _scrollController,
                   itemCount: messages.length,
                   itemBuilder: (context, index) {
-                    final messageData = messages[index].data() as Map<String, dynamic>;
+                    final messageData =
+                        messages[index].data() as Map<String, dynamic>;
                     final isMe = messageData['senderId'] == _currentDoctorId;
                     return _buildMessageBubble(messageData['text'], isMe);
                   },
@@ -154,8 +178,13 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
                       controller: _messageController,
                       decoration: InputDecoration(
                         hintText: 'Type a message...',
-                        border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                        border: OutlineInputBorder(
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 10,
+                        ),
                       ),
                     ),
                   ),
@@ -166,7 +195,7 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
                   ),
                 ],
               ),
-            )
+            ),
         ],
       ),
     );
@@ -202,7 +231,9 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
               ),
               ElevatedButton(
                 onPressed: _acceptChat,
-                style: ElevatedButton.styleFrom(backgroundColor: AppColors.primaryColor),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: AppColors.primaryColor,
+                ),
                 child: const Text('Accept Chat'),
               ),
             ],
@@ -216,7 +247,8 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
                   builder: (context) => PatientRecordScreen(
                     patientId: widget.patientId,
                     patientName: widget.patientName,
-                    doctorDetails: {}, // You may need to pass actual doctor details here
+                    doctorDetails:
+                        {}, // You may need to pass actual doctor details here
                   ),
                 ),
               );
@@ -247,10 +279,7 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
       child: Center(
         child: Text(
           statusText,
-          style: TextStyle(
-            color: statusColor,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -263,12 +292,18 @@ class _DoctorChatScreenState extends State<DoctorChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isMe ? AppColors.primaryColor : AppColors.lightGrey.withOpacity(0.2),
+          color: isMe
+              ? AppColors.primaryColor
+              : AppColors.lightGrey.withOpacity(0.2),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
-            bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(0),
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(20),
+            bottomLeft: isMe
+                ? const Radius.circular(20)
+                : const Radius.circular(0),
+            bottomRight: isMe
+                ? const Radius.circular(0)
+                : const Radius.circular(20),
           ),
         ),
         child: Text(

@@ -6,7 +6,8 @@ import 'package:smartcare_app/services/auth_service.dart';
 class DoctorProfileScreen extends StatefulWidget {
   final String doctorId;
 
-  const DoctorProfileScreen({Key? key, required this.doctorId}) : super(key: key);
+  const DoctorProfileScreen({Key? key, required this.doctorId})
+    : super(key: key);
 
   @override
   _DoctorProfileScreenState createState() => _DoctorProfileScreenState();
@@ -17,6 +18,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   // UPDATED: Now stores schedule as a map for display
   Map<String, List<String>> _schedule = {};
   bool _isLoading = true;
+  late Future<DocumentSnapshot> _doctorFuture;
 
   final Color primaryBlue = const Color(0xFF2196F3);
   final Color darkBlue = const Color(0xFF1976D2);
@@ -24,18 +26,33 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
   final Color cardColor = Colors.white;
 
   final List<String> _daysOfWeek = const [
-    'Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'
+    'Sunday',
+    'Monday',
+    'Tuesday',
+    'Wednesday',
+    'Thursday',
+    'Friday',
+    'Saturday',
   ];
-
   @override
   void initState() {
     super.initState();
+    print("Doctor ID: ${widget.doctorId}");
+
+    _doctorFuture = FirebaseFirestore.instance
+        .collection('doctors')
+        .doc(widget.doctorId)
+        .get();
+
     _fetchDoctorData();
   }
 
   Future<void> _fetchDoctorData() async {
     try {
-      final docSnapshot = await FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).get();
+      final docSnapshot = await FirebaseFirestore.instance
+          .collection('doctors')
+          .doc(widget.doctorId)
+          .get();
       if (docSnapshot.exists) {
         final data = docSnapshot.data() as Map<String, dynamic>;
 
@@ -43,13 +60,17 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
         final dynamic fetchedSlots = data['availableSlots'];
         if (fetchedSlots is Map<String, dynamic>) {
           setState(() {
-            _schedule = fetchedSlots.map((key, value) => MapEntry(key, List<String>.from(value)));
+            _schedule = fetchedSlots.map(
+              (key, value) => MapEntry(key, List<String>.from(value)),
+            );
             _isLoading = false;
           });
         } else if (fetchedSlots is List<dynamic>) {
           // Simple migration logic for display: apply old list to Mon-Fri if it exists
           _schedule.clear();
-          final List<String> oldSlots = List<String>.from(fetchedSlots.map((e) => e.toString()));
+          final List<String> oldSlots = List<String>.from(
+            fetchedSlots.map((e) => e.toString()),
+          );
           for (var day in _daysOfWeek) {
             if (day != 'Sunday' && day != 'Saturday' && oldSlots.isNotEmpty) {
               _schedule[day] = oldSlots;
@@ -77,12 +98,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
     return Scaffold(
       backgroundColor: backgroundColor,
       body: FutureBuilder<DocumentSnapshot>(
-        future: FirebaseFirestore.instance.collection('doctors').doc(widget.doctorId).get(),
+        future: _doctorFuture,
         builder: (context, snapshot) {
-          if (snapshot.connectionState == ConnectionState.waiting || _isLoading) {
-            return Center(
-              child: CircularProgressIndicator(color: primaryBlue),
-            );
+          if (snapshot.connectionState == ConnectionState.waiting ||
+              _isLoading) {
+            return Center(child: CircularProgressIndicator(color: primaryBlue));
           }
           if (snapshot.hasError) {
             return const Center(child: Text("Error fetching data."));
@@ -101,7 +121,8 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           final String qualification = data['qualification'] ?? 'N/A';
           final String location = data['location'] ?? 'N/A';
           final String clinicName = data['clinicName'] ?? 'N/A';
-          final String consultationFees = data['consultationFees']?.toString() ?? 'N/A';
+          final String consultationFees =
+              data['consultationFees']?.toString() ?? 'N/A';
           final String profileImageUrl = data['profileImageUrl'] ?? '';
 
           return Column(
@@ -128,7 +149,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                       children: [
                         IconButton(
                           onPressed: () => Navigator.pop(context),
-                          icon: const Icon(Icons.arrow_back, color: Colors.white),
+                          icon: const Icon(
+                            Icons.arrow_back,
+                            color: Colors.white,
+                          ),
                           padding: EdgeInsets.zero,
                         ),
                         const Expanded(
@@ -168,7 +192,11 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                                 ? NetworkImage(profileImageUrl)
                                 : null,
                             child: profileImageUrl.isEmpty
-                                ? Icon(Icons.person, size: 32, color: primaryBlue)
+                                ? Icon(
+                                    Icons.person,
+                                    size: 32,
+                                    color: primaryBlue,
+                                  )
                                 : null,
                           ),
                         ),
@@ -199,7 +227,10 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                               ),
                               const SizedBox(height: 6),
                               Container(
-                                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 8,
+                                  vertical: 4,
+                                ),
                                 decoration: BoxDecoration(
                                   color: Colors.white.withOpacity(0.2),
                                   borderRadius: BorderRadius.circular(12),
@@ -279,9 +310,17 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                             const SizedBox(height: 8),
                             _buildCompactInfoRow(Icons.phone, 'Phone', phone),
                             const SizedBox(height: 8),
-                            _buildCompactInfoRow(Icons.local_hospital, 'Clinic', clinicName),
+                            _buildCompactInfoRow(
+                              Icons.local_hospital,
+                              'Clinic',
+                              clinicName,
+                            ),
                             const SizedBox(height: 8),
-                            _buildCompactInfoRow(Icons.location_on, 'Location', location),
+                            _buildCompactInfoRow(
+                              Icons.location_on,
+                              'Location',
+                              location,
+                            ),
                           ],
                         ),
                       ),
@@ -297,9 +336,16 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
                         child: ElevatedButton.icon(
                           onPressed: () async {
                             await _authService.signOut();
-                            Navigator.of(context).pushNamedAndRemoveUntil('/login', (route) => false);
+                            Navigator.of(context).pushNamedAndRemoveUntil(
+                              '/login',
+                              (route) => false,
+                            );
                           },
-                          icon: const Icon(Icons.logout, color: Colors.white, size: 18),
+                          icon: const Icon(
+                            Icons.logout,
+                            color: Colors.white,
+                            size: 18,
+                          ),
                           label: const Text(
                             "Log Out",
                             style: TextStyle(
@@ -332,7 +378,15 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
 
   Widget _buildTimeSlotsSection() {
     final List<Widget> dayWidgets = [];
-    final List<String> sortedDays = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'];
+    final List<String> sortedDays = [
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
+    ];
 
     for (var day in sortedDays) {
       final slots = _schedule[day] ?? [];
@@ -358,42 +412,48 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
               Expanded(
                 child: isAvailable
                     ? Wrap(
-                  spacing: 6.0,
-                  runSpacing: 3.0,
-                  children: slots.map((slot) =>
-                      Container(
-                        padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
-                        decoration: BoxDecoration(
-                          color: primaryBlue.withOpacity(0.1),
-                          borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: primaryBlue.withOpacity(0.3)),
-                        ),
-                        child: Text(
-                          slot,
-                          style: TextStyle(
-                            color: primaryBlue,
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
+                        spacing: 6.0,
+                        runSpacing: 3.0,
+                        children: slots
+                            .map(
+                              (slot) => Container(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 6,
+                                  vertical: 2,
+                                ),
+                                decoration: BoxDecoration(
+                                  color: primaryBlue.withOpacity(0.1),
+                                  borderRadius: BorderRadius.circular(12),
+                                  border: Border.all(
+                                    color: primaryBlue.withOpacity(0.3),
+                                  ),
+                                ),
+                                child: Text(
+                                  slot,
+                                  style: TextStyle(
+                                    color: primaryBlue,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w500,
+                                  ),
+                                ),
+                              ),
+                            )
+                            .toList(),
                       )
-                  ).toList(),
-                )
                     : Text(
-                  'Unavailable/Holiday',
-                  style: TextStyle(
-                    fontStyle: FontStyle.italic,
-                    color: Colors.red[700],
-                    fontSize: 12,
-                  ),
-                ),
+                        'Unavailable/Holiday',
+                        style: TextStyle(
+                          fontStyle: FontStyle.italic,
+                          color: Colors.red[700],
+                          fontSize: 12,
+                        ),
+                      ),
               ),
             ],
           ),
         ),
       );
     }
-
 
     return Container(
       width: double.infinity,
@@ -462,10 +522,7 @@ class _DoctorProfileScreenState extends State<DoctorProfileScreen> {
           const SizedBox(height: 2),
           Text(
             value,
-            style: const TextStyle(
-              fontSize: 11,
-              fontWeight: FontWeight.bold,
-            ),
+            style: const TextStyle(fontSize: 11, fontWeight: FontWeight.bold),
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.center,

@@ -17,6 +17,11 @@ dependencies:
   firebase_auth: ^6.0.2
   cloud_firestore: ^6.0.1
 
+  
+  zego_uikit_prebuilt_call: ^4.22.3
+  zego_uikit_signaling_plugin: ^2.8.5
+  vibration: ^3.1.3
+
 
 
   # 📚 PDF Utilities
@@ -40,10 +45,10 @@ dependencies:
   supabase_flutter: ^2.5.0  # Required for SupabaseStorageService and main initialization
 
   # 🧠 AI
-  google_generative_ai: ^0.4.7
+  google_generative_ai: ^0.4.6
 
   # 📂 File picker
-  file_picker: ^8.0.0
+  file_picker: ^10.3.8
 
   # 🎨 Icons
   cupertino_icons: ^1.0.8
@@ -65,3 +70,4 @@ flutter_launcher_icons:
   android: true
   ios: true
   image_path: "lib/assets/app_icon.png"
+

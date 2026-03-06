@@ -7,12 +7,16 @@ import 'package:smartcare_app/constants/colors.dart';
 import 'package:smartcare_app/services/chat_service.dart';
 import 'package:smartcare_app/utils/chat_status.dart';
 import 'package:smartcare_app/services/auth_service.dart';
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
+import 'package:zego_uikit/zego_uikit.dart';
 
 class PatientChatScreen extends StatefulWidget {
   final Doctor doctor;
   final String? chatId;
 
-  const PatientChatScreen({Key? key, required this.doctor, this.chatId}) : super(key: key);
+  const PatientChatScreen({Key? key, required this.doctor, this.chatId})
+    : super(key: key);
 
   @override
   _PatientChatScreenState createState() => _PatientChatScreenState();
@@ -32,7 +36,7 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
     'I have a question about my medication.',
     'I need a follow-up appointment.',
     'I have a quick question about a recent test result.',
-    'I have a new symptom to report.'
+    'I have a new symptom to report.',
   ];
 
   @override
@@ -70,7 +74,8 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
             _chatStatus = status;
             _isChatActive = status == ChatStatus.active.toShortString();
           });
-          if (status == ChatStatus.closed.toShortString() || status == ChatStatus.declined.toShortString()) {
+          if (status == ChatStatus.closed.toShortString() ||
+              status == ChatStatus.declined.toShortString()) {
             _resetChatState();
           }
         }
@@ -121,15 +126,17 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
         _chatId = newChatId;
       });
       _listenToChatUpdates();
-      ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Request sent to doctor.')),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(const SnackBar(content: Text('Request sent to doctor.')));
     } catch (e) {
       setState(() {
         _chatId = null;
       });
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Failed to start chat. Please try again.')),
+        const SnackBar(
+          content: Text('Failed to start chat. Please try again.'),
+        ),
       );
     }
   }
@@ -158,19 +165,28 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
           ),
         ),
         const SizedBox(height: 16),
-        ..._initialButtons.map((text) => Container(
-          width: double.infinity,
-          margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
-          child: ElevatedButton(
-            onPressed: () => _createChat(text),
-            style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primaryColor,
-              padding: const EdgeInsets.symmetric(vertical: 16),
-              shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-            ),
-            child: Text(text, style: const TextStyle(color: Colors.white)),
-          ),
-        )).toList(),
+        ..._initialButtons
+            .map(
+              (text) => Container(
+                width: double.infinity,
+                margin: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+                child: ElevatedButton(
+                  onPressed: () => _createChat(text),
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: AppColors.primaryColor,
+                    padding: const EdgeInsets.symmetric(vertical: 16),
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                  ),
+                  child: Text(
+                    text,
+                    style: const TextStyle(color: Colors.white),
+                  ),
+                ),
+              ),
+            )
+            .toList(),
       ],
     );
   }
@@ -195,7 +211,8 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
                 controller: _scrollController,
                 itemCount: messages.length,
                 itemBuilder: (context, index) {
-                  final messageData = messages[index].data() as Map<String, dynamic>;
+                  final messageData =
+                      messages[index].data() as Map<String, dynamic>;
                   final isMe = messageData['senderId'] == _currentUser!.uid;
                   return _buildMessageBubble(messageData['text'], isMe);
                 },
@@ -213,8 +230,13 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
                     controller: _messageController,
                     decoration: InputDecoration(
                       hintText: 'Type a message...',
-                      border: OutlineInputBorder(borderRadius: BorderRadius.circular(20)),
-                      contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+                      border: OutlineInputBorder(
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      contentPadding: const EdgeInsets.symmetric(
+                        horizontal: 16,
+                        vertical: 10,
+                      ),
                     ),
                   ),
                 ),
@@ -225,7 +247,7 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
                 ),
               ],
             ),
-          )
+          ),
       ],
     );
   }
@@ -252,10 +274,7 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
       child: Center(
         child: Text(
           statusText,
-          style: TextStyle(
-            color: statusColor,
-            fontWeight: FontWeight.bold,
-          ),
+          style: TextStyle(color: statusColor, fontWeight: FontWeight.bold),
         ),
       ),
     );
@@ -268,12 +287,18 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
         margin: const EdgeInsets.symmetric(vertical: 4, horizontal: 12),
         padding: const EdgeInsets.symmetric(vertical: 10, horizontal: 16),
         decoration: BoxDecoration(
-          color: isMe ? AppColors.primaryColor : AppColors.lightGrey.withOpacity(0.2),
+          color: isMe
+              ? AppColors.primaryColor
+              : AppColors.lightGrey.withOpacity(0.2),
           borderRadius: BorderRadius.only(
             topLeft: const Radius.circular(20),
             topRight: const Radius.circular(20),
-            bottomLeft: isMe ? const Radius.circular(20) : const Radius.circular(0),
-            bottomRight: isMe ? const Radius.circular(0) : const Radius.circular(20),
+            bottomLeft: isMe
+                ? const Radius.circular(20)
+                : const Radius.circular(0),
+            bottomRight: isMe
+                ? const Radius.circular(0)
+                : const Radius.circular(20),
           ),
         ),
         child: Text(
@@ -291,11 +316,32 @@ class _PatientChatScreenState extends State<PatientChatScreen> {
         title: Text('Chat with Dr. ${widget.doctor.name}'),
         backgroundColor: AppColors.primaryColor,
         foregroundColor: Colors.white,
+        actions: [
+          if (_isChatActive)
+            ZegoSendCallInvitationButton(
+              isVideoCall: false,
+              resourceID: "zego_call",
+              invitees: [
+                ZegoUIKitUser(id: widget.doctor.id, name: widget.doctor.name),
+              ],
+            ),
+
+          if (_isChatActive)
+            ZegoSendCallInvitationButton(
+              isVideoCall: true,
+              resourceID: "zego_call",
+              invitees: [
+                ZegoUIKitUser(id: widget.doctor.id, name: widget.doctor.name),
+              ],
+            ),
+        ],
       ),
       body: _chatId == null || _chatId == 'creating'
           ? Center(
-        child: _chatId == 'creating' ? const CircularProgressIndicator() : _buildInitialView(),
-      )
+              child: _chatId == 'creating'
+                  ? const CircularProgressIndicator()
+                  : _buildInitialView(),
+            )
           : _buildChatView(),
     );
   }

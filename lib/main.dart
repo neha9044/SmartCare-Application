@@ -1,7 +1,6 @@
 // lib/main.dart
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
-// FIX: Imported Firebase Auth using a prefix to resolve the User conflict
 import 'package:firebase_auth/firebase_auth.dart' as firebase_auth;
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:smartcare_app/constants/colors.dart';
@@ -10,8 +9,16 @@ import 'package:smartcare_app/screens/registration_screen.dart';
 import 'package:smartcare_app/screens/login_screen.dart';
 import 'package:smartcare_app/screens/patient/patient_dashboard.dart';
 import 'package:smartcare_app/screens/doctor/doctor_dashboard.dart';
-import 'package:smartcare_app/screens/pharmacy/pharmacy_home_page.dart';
 import 'package:smartcare_app/screens/pharmacy/pharmacy_dashboard.dart';
+
+// ZEGOCLOUD imports
+import 'package:zego_uikit_prebuilt_call/zego_uikit_prebuilt_call.dart';
+import 'package:zego_uikit_signaling_plugin/zego_uikit_signaling_plugin.dart';
+
+// 🔹 Replace with your actual values from ZEGOCLOUD dashboard
+const int appID = 337679718;
+const String appSign =
+    "cf00ab9695c467b514ec8babe34842be933c9074d03c306980c1f2f48f5af98b";
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -67,10 +74,22 @@ class SmartCareApp extends StatelessWidget {
 }
 
 class AuthWrapper extends StatelessWidget {
+  const AuthWrapper({Key? key}) : super(key: key);
+
+  void _initZego(firebase_auth.User user) {
+    ZegoUIKitPrebuiltCallInvitationService().init(
+      appID: appID,
+      appSign: appSign,
+      userID: user.uid,
+      userName: user.email ?? "User",
+      plugins: [ZegoUIKitSignalingPlugin()],
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
-    return StreamBuilder<firebase_auth.User?>( // FIX: Use prefixed User
-      stream: firebase_auth.FirebaseAuth.instance.authStateChanges(), // FIX: Use prefixed FirebaseAuth
+    return StreamBuilder<firebase_auth.User?>(
+      stream: firebase_auth.FirebaseAuth.instance.authStateChanges(),
       builder: (context, userSnapshot) {
         if (userSnapshot.connectionState == ConnectionState.waiting) {
           return SplashScreen();
@@ -83,50 +102,74 @@ class AuthWrapper extends StatelessWidget {
         final user = userSnapshot.data;
 
         if (user != null) {
-          // Check if the user is a Doctor
+          // 🔹 Initialize ZEGOCLOUD when user logs in
+          _initZego(user);
+
+          // Check Doctor
           return StreamBuilder<DocumentSnapshot>(
-            stream: FirebaseFirestore.instance.collection('doctors').doc(user.uid).snapshots(),
+            stream: FirebaseFirestore.instance
+                .collection('doctors')
+                .doc(user.uid)
+                .snapshots(),
             builder: (context, doctorSnapshot) {
               if (doctorSnapshot.connectionState == ConnectionState.waiting) {
                 return SplashScreen();
               }
+
               if (doctorSnapshot.hasError) {
                 return const Center(child: Text('Error fetching doctor data.'));
               }
+
               if (doctorSnapshot.hasData && doctorSnapshot.data!.exists) {
                 return const DoctorDashboard();
               }
 
-              // If not a doctor, check if they are a Patient
+              // Check Patient
               return StreamBuilder<DocumentSnapshot>(
-                stream: FirebaseFirestore.instance.collection('patients').doc(user.uid).snapshots(),
+                stream: FirebaseFirestore.instance
+                    .collection('patients')
+                    .doc(user.uid)
+                    .snapshots(),
                 builder: (context, patientSnapshot) {
-                  if (patientSnapshot.connectionState == ConnectionState.waiting) {
+                  if (patientSnapshot.connectionState ==
+                      ConnectionState.waiting) {
                     return SplashScreen();
                   }
+
                   if (patientSnapshot.hasError) {
-                    return const Center(child: Text('Error fetching patient data.'));
+                    return const Center(
+                      child: Text('Error fetching patient data.'),
+                    );
                   }
+
                   if (patientSnapshot.hasData && patientSnapshot.data!.exists) {
                     return const PatientDashboard();
                   }
 
-                  // If not a patient, check if they are a Pharmacy
+                  // Check Pharmacy
                   return StreamBuilder<DocumentSnapshot>(
-                    stream: FirebaseFirestore.instance.collection('pharmacies').doc(user.uid).snapshots(),
+                    stream: FirebaseFirestore.instance
+                        .collection('pharmacies')
+                        .doc(user.uid)
+                        .snapshots(),
                     builder: (context, pharmacySnapshot) {
-                      if (pharmacySnapshot.connectionState == ConnectionState.waiting) {
+                      if (pharmacySnapshot.connectionState ==
+                          ConnectionState.waiting) {
                         return SplashScreen();
                       }
+
                       if (pharmacySnapshot.hasError) {
-                        return const Center(child: Text('Error fetching pharmacy data.'));
+                        return const Center(
+                          child: Text('Error fetching pharmacy data.'),
+                        );
                       }
-                      if (pharmacySnapshot.hasData && pharmacySnapshot.data!.exists) {
+
+                      if (pharmacySnapshot.hasData &&
+                          pharmacySnapshot.data!.exists) {
                         return const PharmacyDashboard();
                       }
 
-                      // User is logged in but their document doesn't exist, log them out.
-                      firebase_auth.FirebaseAuth.instance.signOut(); // FIX: Use prefixed FirebaseAuth
+                      firebase_auth.FirebaseAuth.instance.signOut();
                       return LoginScreen();
                     },
                   );
@@ -135,7 +178,6 @@ class AuthWrapper extends StatelessWidget {
             },
           );
         } else {
-          // If no user is logged in, show the login screen
           return LoginScreen();
         }
       },
