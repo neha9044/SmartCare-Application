@@ -5,7 +5,7 @@ import 'package:flutter/material.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:firebase_auth/firebase_auth.dart';
-import 'package:smartcare_app/services/medical_report_service.dart';
+import 'package:smartcare_app/services/gemini_report_service.dart';
 
 class MedicalReportsScreen extends StatefulWidget {
   const MedicalReportsScreen({Key? key}) : super(key: key);
@@ -32,6 +32,11 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
   void initState() {
     super.initState();
     _tabController = TabController(length: 2, vsync: this);
+    
+    // Initialize Gemini with API key
+    // TODO: Replace with your actual Gemini API key from https://aistudio.google.com/app/apikeys
+    GeminiReportService.initialize('AIzaSyCODSdkdCOlQO6zDRFs9zwQdHUN9Z59DUU');
+    
     _loadReportHistory();
   }
 
@@ -44,13 +49,11 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
   Future<void> _loadReportHistory() async {
     setState(() => _isLoadingHistory = true);
     try {
-      final user = FirebaseAuth.instance.currentUser;
-      if (user != null) {
-        final result = await MedicalReportService.getUserReports(user.uid);
-        setState(() {
-          _reportHistory = result['reports'] ?? [];
-        });
-      }
+      // History is managed locally - reports are added when analyzed
+      // Reports are stored in state and displayed in history tab
+      setState(() {
+        _reportHistory = _reportHistory; // Refresh display
+      });
     } catch (e) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -85,17 +88,16 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
           throw Exception('User not logged in');
         }
 
-        final response = await MedicalReportService.uploadReport(
+        final response = await GeminiReportService.uploadReport(
           result.files.single,
           user.uid,
         );
 
         setState(() {
           _analysisResult = response;
+          // Add to history
+          _reportHistory.insert(0, response);
         });
-
-        // Reload history to show the new report
-        _loadReportHistory();
 
         if (mounted) {
           ScaffoldMessenger.of(context).showSnackBar(
@@ -135,16 +137,15 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
         throw Exception('User not logged in');
       }
 
-      final response = await MedicalReportService.pickAndUploadFromCamera(
+      final response = await GeminiReportService.pickAndUploadFromCamera(
         user.uid,
       );
 
       setState(() {
         _analysisResult = response;
+        // Add to history
+        _reportHistory.insert(0, response);
       });
-
-      // Reload history to show the new report
-      _loadReportHistory();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -183,16 +184,15 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
         throw Exception('User not logged in');
       }
 
-      final response = await MedicalReportService.pickAndUploadFromGallery(
+      final response = await GeminiReportService.pickAndUploadFromGallery(
         user.uid,
       );
 
       setState(() {
         _analysisResult = response;
+        // Add to history
+        _reportHistory.insert(0, response);
       });
-
-      // Reload history to show the new report
-      _loadReportHistory();
 
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
@@ -500,6 +500,47 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
                   ),
                 ),
                 const SizedBox(height: 16),
+
+                // Actions/Recommendations
+                if (_analysisResult!['actions'] != null &&
+                    (_analysisResult!['actions'] as List).isNotEmpty) ...[
+                  const Text(
+                    'Recommended Actions',
+                    style: TextStyle(fontWeight: FontWeight.bold, fontSize: 16),
+                  ),
+                  const SizedBox(height: 8),
+                  ...(_analysisResult!['actions'] as List).map(
+                    (action) => Container(
+                      margin: const EdgeInsets.only(bottom: 8),
+                      padding: const EdgeInsets.all(12),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFF2196F3).withOpacity(0.1),
+                        borderRadius: BorderRadius.circular(8),
+                        border: Border.all(
+                          color: const Color(0xFF2196F3).withOpacity(0.3),
+                        ),
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.check_circle_outline,
+                            color: primaryBlue,
+                            size: 20,
+                          ),
+                          const SizedBox(width: 8),
+                          Expanded(
+                            child: Text(
+                              action.toString(),
+                              style: const TextStyle(fontSize: 14),
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                ],
 
                 // Abnormal Values
                 if (_analysisResult!['abnormal'] != null &&
@@ -819,6 +860,48 @@ class _MedicalReportsScreenState extends State<MedicalReportsScreen>
                       report['summary'] ?? 'No summary available',
                       style: const TextStyle(fontSize: 14, height: 1.6),
                     ),
+                    if (report['actions'] != null &&
+                        (report['actions'] as List).isNotEmpty) ...[
+                      const SizedBox(height: 24),
+                      const Text(
+                        'Recommended Actions',
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.bold,
+                        ),
+                      ),
+                      const SizedBox(height: 8),
+                      ...(report['actions'] as List).map(
+                        (action) => Container(
+                          margin: const EdgeInsets.only(bottom: 8),
+                          padding: const EdgeInsets.all(12),
+                          decoration: BoxDecoration(
+                            color: Colors.blue.shade50,
+                            borderRadius: BorderRadius.circular(8),
+                            border: Border.all(
+                              color: Colors.blue.shade200,
+                            ),
+                          ),
+                          child: Row(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Icon(
+                                Icons.check_circle_outline,
+                                color: Colors.blue.shade700,
+                                size: 20,
+                              ),
+                              const SizedBox(width: 8),
+                              Expanded(
+                                child: Text(
+                                  action.toString(),
+                                  style: const TextStyle(fontSize: 14),
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ),
+                    ],
                     if (report['abnormal'] != null &&
                         (report['abnormal'] as List).isNotEmpty) ...[
                       const SizedBox(height: 24),
