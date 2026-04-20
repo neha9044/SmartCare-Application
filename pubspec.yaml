@@ -1,0 +1,78 @@
+name: smartcare_app
+description: "A new Flutter project."
+publish_to: 'none'
+
+version: 1.0.0+1
+
+environment:
+  sdk: ^3.9.0
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  path_provider: ^2.1.2
+  sqflite: ^2.3.2
+  path: ^1.9.0
+  encrypt: ^5.0.3
+  local_auth: ^2.1.8
+  flutter_secure_storage: ^9.0.0
+  open_filex: ^4.3.2
+  uuid: ^4.3.3
+  cryptography: ^2.7.0
+  
+  
+  
+  # 🔥 Firebase Core
+  firebase_core: ^4.1.0
+  firebase_auth: ^6.0.2
+  cloud_firestore: ^6.0.1
+  
+
+  # 📚 PDF Utilities
+  syncfusion_flutter_pdf: ^24.2.9  # Required by PdfSummarizationService
+
+  # 💾 Local storage
+  shared_preferences: ^2.2.0
+
+  # 📅 Calendar & Date Utils
+  table_calendar: ^3.0.9
+  intl: ^0.19.0 # Required for date formatting in various screens
+
+  # 📍 Location
+  geolocator: ^12.0.0
+  geocoding: ^3.0.0
+  geofence_service: ^6.0.0
+
+  # 🌐 Network & Storage
+  http: ^1.2.2
+  web_socket_channel: ^2.4.0
+  supabase_flutter: ^2.5.0  # Required for SupabaseStorageService and main initialization
+
+  # 🧠 AI
+  google_generative_ai: ^0.4.6
+
+  # 📂 File picker
+  file_picker: ^10.3.8
+
+  # 🎨 Icons
+  cupertino_icons: ^1.0.8
+
+dev_dependencies:
+  flutter_test:
+    sdk: flutter
+  flutter_launcher_icons: ^0.13.1
+  flutter_lints: ^5.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/
+    - assets/specialist/
+
+flutter_launcher_icons:
+  android: true
+  ios: true
+  image_path: "lib/assets/app_icon.png"
+
