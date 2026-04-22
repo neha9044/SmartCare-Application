@@ -18,7 +18,7 @@ class _PdfSummarizationScreenState extends State<PdfSummarizationScreen> {
   bool isLoading = false;
 
   // 🔥 CHANGE THIS TO YOUR PC IP
-  final String apiUrl = "http://192.168.0.106:8000/analyze-report/";
+  final String apiUrl = "http://192.168.82.105:8000/analyze-report/";
 
   Future<void> _pickAndSummarizePdf() async {
     setState(() {
